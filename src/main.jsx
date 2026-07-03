@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Activity, BarChart3, Check, Dumbbell, Flame, Home, Settings as SettingsIcon, Trophy, Weight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from './supabase'
-import { profile, nextWorkout, localSeedWorkouts } from './seed'
+import { profile, workoutTemplates, localSeedWorkouts } from './seed'
 import './styles.css'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -11,6 +11,28 @@ const today = () => new Date().toISOString().slice(0, 10)
 const numberFrom = (value) => {
   const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''))
   return Number.isFinite(n) ? n : null
+}
+
+function getNextWorkout(workouts) {
+  if (!workouts?.length) {
+    return workoutTemplates[0]
+  }
+
+  const latestWorkout = [...workouts]
+    .filter(w => w?.date && w?.name)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+
+  if (!latestWorkout) {
+    return workoutTemplates[0]
+  }
+
+  const currentIndex = workoutTemplates.findIndex(template => template.name === latestWorkout.name)
+
+  if (currentIndex === -1) {
+    return workoutTemplates[0]
+  }
+
+  return workoutTemplates[(currentIndex + 1) % workoutTemplates.length]
 }
 
 function App() {
@@ -23,6 +45,8 @@ function App() {
   useEffect(() => {
     loadCloudData()
   }, [])
+
+  const currentWorkout = useMemo(() => getNextWorkout(workouts), [workouts])
 
   async function ensureProfile() {
     if (profileId) return profileId
@@ -140,7 +164,7 @@ function App() {
         .insert({
           profile_id: pid,
           workout_date: today(),
-          workout_name: nextWorkout.name,
+          workout_name: currentWorkout.name,
           notes: formData.notes
         })
         .select()
@@ -192,8 +216,8 @@ function App() {
   return (
     <div>
       <main className="app">
-        {tab === 'home' && <Dashboard workouts={workouts} body={body} bests={bests} cloudStatus={cloudStatus} legPressChart={legPressChart} />}
-        {tab === 'workout' && <Workout onSave={saveWorkout} bests={bests} />}
+        {tab === 'home' && <Dashboard workouts={workouts} body={body} bests={bests} cloudStatus={cloudStatus} legPressChart={legPressChart} currentWorkout={currentWorkout} />}
+        {tab === 'workout' && <Workout onSave={saveWorkout} bests={bests} currentWorkout={currentWorkout} />}
         {tab === 'history' && <History workouts={workouts} />}
         {tab === 'progress' && <Progress bests={bests} body={body} onSaveBody={saveBody} legPressChart={legPressChart} />}
         {tab === 'settings' && <Settings cloudStatus={cloudStatus} reload={loadCloudData} />}
@@ -210,7 +234,7 @@ function App() {
   )
 }
 
-function Dashboard({ workouts, body, bests, cloudStatus, legPressChart }) {
+function Dashboard({ workouts, body, bests, cloudStatus, legPressChart, currentWorkout }) {
   const latestWeight = body?.[body.length - 1]?.weight_kg || profile.startingWeightKg
   const pct = Math.round((workouts.length / profile.targetWorkouts) * 100)
   const nextSession = workouts.length + 1
@@ -227,8 +251,8 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart }) {
         <div className="coachIcon"><Flame size={22}/></div>
         <div>
           <div className="coachLabel">Today&apos;s workout</div>
-          <h2>{nextWorkout.name}</h2>
-          <p>Main target: <strong>82kg Leg Press</strong>. Keep planks around <strong>35 seconds</strong> with good form.</p>
+          <h2>{currentWorkout.name}</h2>
+          <p>Main focus: <strong>{currentWorkout.mainTarget}</strong>. {currentWorkout.description}</p>
         </div>
       </section>
 
@@ -269,9 +293,9 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart }) {
   )
 }
 
-function Workout({ onSave, bests }) {
+function Workout({ onSave, bests, currentWorkout }) {
   const [notes, setNotes] = useState('')
-  const [items, setItems] = useState(nextWorkout.exercises.map(ex => ({
+  const [items, setItems] = useState(() => currentWorkout.exercises.map(ex => ({
     ...ex,
     weight: ex.defaultWeight || '',
     set1: '',
@@ -279,6 +303,18 @@ function Workout({ onSave, bests }) {
     set3: '',
     difficulty: ''
   })))
+
+  useEffect(() => {
+    setItems(currentWorkout.exercises.map(ex => ({
+      ...ex,
+      weight: ex.defaultWeight || '',
+      set1: '',
+      set2: '',
+      set3: '',
+      difficulty: ''
+    })))
+    setNotes('')
+  }, [currentWorkout.name])
 
   function update(index, key, value) {
     setItems(prev =>
@@ -292,8 +328,8 @@ function Workout({ onSave, bests }) {
     <>
       <header className="workoutHeader">
         <div>
-          <div className="eyebrow">{nextWorkout.subtitle}</div>
-          <h1>{nextWorkout.name}</h1>
+          <div className="eyebrow">{currentWorkout.subtitle}</div>
+          <h1>{currentWorkout.name}</h1>
           <p className="muted">{items.length} exercises · 45–60 minutes</p>
         </div>
       </header>
@@ -349,7 +385,7 @@ function History({ workouts }) {
             <span className="pill">{w.name}</span>
           </div>
           <p className="muted">
-            {(w.exercises || []).map(ex => `${ex.exercise_name}: ${ex.weight} · ${ex.set_1}/${ex.set_2}/${ex.set_3}`).join('\\n')}
+            {(w.exercises || []).map(ex => `${ex.exercise_name}: ${ex.weight} · ${ex.set_1}/${ex.set_2}/${ex.set_3}`).join('\n')}
           </p>
         </section>
       ))}
@@ -409,7 +445,7 @@ function Settings({ cloudStatus, reload }) {
       </section>
       <section className="card">
         <h2>Coming next</h2>
-        <p className="muted">Automatic workout rotation, rest timer, exercise videos, press-up challenge, and smarter progression recommendations.</p>
+        <p className="muted">Previous workout comparison, rest timer, exercise videos, press-up challenge, and smarter progression recommendations.</p>
       </section>
     </>
   )
