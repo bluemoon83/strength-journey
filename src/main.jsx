@@ -233,7 +233,6 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart }) {
 }
 
 function Workout({ onSave, bests }) {
-  const [index, setIndex] = useState(0)
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState(nextWorkout.exercises.map(ex => ({
     ...ex,
@@ -244,25 +243,12 @@ function Workout({ onSave, bests }) {
     difficulty: ''
   })))
 
-  const ex = items[index]
-  const progress = Math.round(((index + 1) / items.length) * 100)
-
-  function update(key, value) {
-    setItems(prev => prev.map((item, i) => i === index ? { ...item, [key]: value } : item))
-  }
-
-  function adjustWeight(delta) {
-    const current = numberFrom(ex.weight) || numberFrom(ex.defaultWeight) || 0
-    if (!current) return
-    update('weight', `${Math.max(0, current + delta)} kg`)
-  }
-
-  function next() {
-    if (index < items.length - 1) setIndex(index + 1)
-  }
-
-  function back() {
-    if (index > 0) setIndex(index - 1)
+  function update(index, key, value) {
+    setItems(prev =>
+      prev.map((item, i) =>
+        i === index ? { ...item, [key]: value } : item
+      )
+    )
   }
 
   return (
@@ -270,47 +256,45 @@ function Workout({ onSave, bests }) {
       <header className="workoutHeader">
         <div>
           <div className="eyebrow">{nextWorkout.name}</div>
-          <h1>{ex.name}</h1>
-          <p className="target">Target: {ex.target} · {ex.reps}</p>
+          <h1>{nextWorkout.subtitle}</h1>
+          <p className="muted">{items.length} exercises · 45–60 minutes</p>
         </div>
-        <span className="ring">{progress}%</span>
       </header>
 
-      <section className="exerciseScreen">
-        <p className="muted">Previous best: <strong>{bests[ex.name]?.display || 'Not logged yet'}</strong></p>
+      <section className="workoutList">
+        {items.map((ex, index) => (
+          <div className="workoutExerciseCard" key={ex.name}>
+            <h3>{index + 1}. {ex.name}</h3>
+            <p className="target">Target: {ex.target} · {ex.reps}</p>
+            <p className="muted">
+              Previous best: <strong>{bests[ex.name]?.display || 'Not logged yet'}</strong>
+            </p>
 
-        <div className="weightPicker">
-          <button onClick={() => adjustWeight(-2.5)}>-2.5</button>
-          <input value={ex.weight} onChange={e => update('weight', e.target.value)} placeholder="Weight" />
-          <button onClick={() => adjustWeight(2.5)}><Plus size={16}/>2.5</button>
-        </div>
+            <div className="grid">
+              <Field label="Weight" value={ex.weight} onChange={v => update(index, 'weight', v)} />
+              <Field label="Difficulty" value={ex.difficulty} onChange={v => update(index, 'difficulty', v)} />
+            </div>
 
-        <div className="setButtons">
-          <RepInput label="Set 1" value={ex.set1} onChange={v => update('set1', v)} />
-          <RepInput label="Set 2" value={ex.set2} onChange={v => update('set2', v)} />
-          <RepInput label="Set 3" value={ex.set3} onChange={v => update('set3', v)} />
-        </div>
-
-        <div className="difficulty">
-          <label>Difficulty</label>
-          <input value={ex.difficulty} onChange={e => update('difficulty', e.target.value)} placeholder="1–10" />
-        </div>
+            <div className="sets">
+              <Field label="Set 1" value={ex.set1} onChange={v => update(index, 'set1', v)} />
+              <Field label="Set 2" value={ex.set2} onChange={v => update(index, 'set2', v)} />
+              <Field label="Set 3" value={ex.set3} onChange={v => update(index, 'set3', v)} />
+            </div>
+          </div>
+        ))}
       </section>
 
-      <section className="card navCard">
-        <div className="row">
-          <button className="miniBtn" onClick={back} disabled={index === 0}><ChevronLeft/> Back</button>
-          <span className="muted">{index + 1} / {items.length}</span>
-          <button className="miniBtn" onClick={next} disabled={index === items.length - 1}>Next <ChevronRight/></button>
-        </div>
+      <section className="card">
+        <label>Session notes</label>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="Energy, difficulty, anything awkward or too easy..."
+        />
 
-        {index === items.length - 1 && (
-          <>
-            <label>Session notes</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Energy, difficulty, anything awkward or too easy..." />
-            <button className="btn" onClick={() => onSave({ exercises: items, notes })}><Check size={18}/> Finish + save to cloud</button>
-          </>
-        )}
+        <button className="btn" onClick={() => onSave({ exercises: items, notes })}>
+          <Check size={18}/> Finish + save to cloud
+        </button>
       </section>
     </>
   )
