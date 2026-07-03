@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Activity, BarChart3, Dumbbell, Home, Settings as SettingsIcon } from 'lucide-react'
+import { Activity, BarChart3, Check, ChevronLeft, ChevronRight, Dumbbell, Flame, Home, Plus, Settings as SettingsIcon, Timer, Trophy, Weight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from './supabase'
 import { profile, nextWorkout, localSeedWorkouts } from './seed'
@@ -19,13 +19,10 @@ function App() {
   const [body, setBody] = useState([{ date: '2026-07-02', weight_kg: 89, waist_cm: '' }])
   const [cloudStatus, setCloudStatus] = useState('Ready')
 
-  useEffect(() => {
-    loadCloudData()
-  }, [])
+  useEffect(() => { loadCloudData() }, [])
 
   async function ensureProfile() {
     if (profileId) return profileId
-
     const { data, error } = await supabase
       .from('profiles')
       .insert({
@@ -38,7 +35,6 @@ function App() {
       })
       .select()
       .single()
-
     if (error) throw error
     setProfileId(data.id)
     localStorage.setItem('sj_profile_id', data.id)
@@ -102,14 +98,13 @@ function App() {
   const legPressChart = workouts
     .map(w => {
       const lp = (w.exercises || []).find(e => e.exercise_name === 'Leg Press')
-      return lp ? { date: w.date.slice(5), weight: numberFrom(lp.weight) } : null
+      return lp ? { date: (w.date || '').slice(5), weight: numberFrom(lp.weight) } : null
     })
     .filter(Boolean)
 
   async function saveWorkout(formData) {
     try {
       const pid = await ensureProfile()
-
       const { data: workout, error: wErr } = await supabase
         .from('workouts')
         .insert({
@@ -161,7 +156,7 @@ function App() {
     <div>
       <main className="app">
         {tab === 'home' && <Dashboard workouts={workouts} body={body} bests={bests} cloudStatus={cloudStatus} legPressChart={legPressChart} />}
-        {tab === 'workout' && <Workout onSave={saveWorkout} />}
+        {tab === 'workout' && <Workout onSave={saveWorkout} bests={bests} />}
         {tab === 'history' && <History workouts={workouts} />}
         {tab === 'progress' && <Progress bests={bests} body={body} onSaveBody={saveBody} legPressChart={legPressChart} />}
         {tab === 'settings' && <Settings cloudStatus={cloudStatus} reload={loadCloudData} />}
@@ -181,46 +176,55 @@ function App() {
 function Dashboard({ workouts, body, bests, cloudStatus, legPressChart }) {
   const latestWeight = body?.[body.length - 1]?.weight_kg || profile.startingWeightKg
   const pct = Math.round((workouts.length / profile.targetWorkouts) * 100)
+  const nextSession = workouts.length + 1
 
   return (
     <>
-      <header>
-        <h1>Stephen's Strength Journey</h1>
+      <header className="topHero">
+        <div className="eyebrow">Strength Journey</div>
+        <h1>Welcome back, Stephen</h1>
         <p className="muted">{profile.gym} · {profile.goal}</p>
       </header>
 
-      <section className="card hero">
+      <section className="coachCard">
+        <div className="coachIcon"><Flame size={22}/></div>
+        <div>
+          <div className="coachLabel">AI Coach</div>
+          <h2>Workout C is ready</h2>
+          <p>Today’s main target is <strong>82kg Leg Press</strong>. Keep planks at <strong>35 seconds</strong> and stay controlled.</p>
+        </div>
+      </section>
+
+      <section className="quickGrid">
+        <Metric icon={<Weight/>} value={`${latestWeight}kg`} label="Latest weight" />
+        <Metric icon={<Trophy/>} value={`${workouts.length}/${profile.targetWorkouts}`} label="Sessions done" />
+        <Metric icon={<Flame/>} value="40" label="July press-ups" />
+        <Metric icon={<Dumbbell/>} value={bests['Leg Press']?.display?.split('×')[0] || '77kg'} label="Leg press PB" />
+      </section>
+
+      <section className="card progressCard">
         <div className="row">
           <div>
-            <h2>{nextWorkout.name} is ready</h2>
-            <p className="muted">{nextWorkout.subtitle}</p>
+            <h2>12-week block</h2>
+            <p className="muted">Session {nextSession} of {profile.targetWorkouts}</p>
           </div>
-          <span className="pill">Session {workouts.length + 1}</span>
+          <span className="ring">{pct}%</span>
         </div>
-      </section>
-
-      <section className="grid">
-        <Metric value={`${latestWeight}kg`} label="Latest weight" />
-        <Metric value={`${workouts.length}/${profile.targetWorkouts}`} label="Workouts done" />
-        <Metric value="40" label="July press-ups/day" />
-        <Metric value={bests['Leg Press']?.display?.split('×')[0] || '77kg'} label="Leg press PB" />
+        <div className="progress"><div className="bar" style={{ width: `${pct}%` }} /></div>
       </section>
 
       <section className="card">
         <div className="row">
-          <h2>12-week progress</h2>
-          <span className="pill">{pct}%</span>
+          <div>
+            <h2>Leg press trend</h2>
+            <p className="muted">Your first big strength marker</p>
+          </div>
+          <span className="pill">68 → 77kg</span>
         </div>
-        <div className="progress"><div className="bar" style={{ width: `${pct}%` }} /></div>
-        <p className="muted">Goal: 36 workouts, stronger lifts, and body weight trending toward {profile.targetWeightKg}kg.</p>
-      </section>
-
-      <section className="card">
-        <h2>Leg press trend</h2>
         <Chart data={legPressChart} />
       </section>
 
-      <section className="card">
+      <section className="card subtle">
         <h2>Cloud status</h2>
         <p className="status">{cloudStatus}</p>
       </section>
@@ -228,44 +232,85 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart }) {
   )
 }
 
-function Workout({ onSave }) {
+function Workout({ onSave, bests }) {
+  const [index, setIndex] = useState(0)
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState(nextWorkout.exercises.map(ex => ({
-    ...ex, weight: ex.defaultWeight || '', set1: '', set2: '', set3: '', difficulty: ''
+    ...ex,
+    weight: ex.defaultWeight || '',
+    set1: '',
+    set2: '',
+    set3: '',
+    difficulty: ''
   })))
 
-  function update(index, key, value) {
+  const ex = items[index]
+  const progress = Math.round(((index + 1) / items.length) * 100)
+
+  function update(key, value) {
     setItems(prev => prev.map((item, i) => i === index ? { ...item, [key]: value } : item))
+  }
+
+  function adjustWeight(delta) {
+    const current = numberFrom(ex.weight) || numberFrom(ex.defaultWeight) || 0
+    if (!current) return
+    update('weight', `${Math.max(0, current + delta)} kg`)
+  }
+
+  function next() {
+    if (index < items.length - 1) setIndex(index + 1)
+  }
+
+  function back() {
+    if (index > 0) setIndex(index - 1)
   }
 
   return (
     <>
-      <h1>{nextWorkout.name}</h1>
-      <p className="muted">{nextWorkout.subtitle}</p>
+      <header className="workoutHeader">
+        <div>
+          <div className="eyebrow">{nextWorkout.name}</div>
+          <h1>{ex.name}</h1>
+          <p className="target">Target: {ex.target} · {ex.reps}</p>
+        </div>
+        <span className="ring">{progress}%</span>
+      </header>
 
-      <section className="card">
-        {items.map((ex, i) => (
-          <div className="exercise" key={ex.name}>
-            <h3>{ex.name}</h3>
-            <p className="target">Target: {ex.target} · {ex.reps}</p>
+      <section className="exerciseScreen">
+        <p className="muted">Previous best: <strong>{bests[ex.name]?.display || 'Not logged yet'}</strong></p>
 
-            <div className="grid">
-              <Field label="Weight" value={ex.weight} onChange={v => update(i, 'weight', v)} />
-              <Field label="Difficulty 1–10" value={ex.difficulty} onChange={v => update(i, 'difficulty', v)} />
-            </div>
+        <div className="weightPicker">
+          <button onClick={() => adjustWeight(-2.5)}>-2.5</button>
+          <input value={ex.weight} onChange={e => update('weight', e.target.value)} placeholder="Weight" />
+          <button onClick={() => adjustWeight(2.5)}><Plus size={16}/>2.5</button>
+        </div>
 
-            <div className="sets">
-              <Field label="Set 1" value={ex.set1} onChange={v => update(i, 'set1', v)} />
-              <Field label="Set 2" value={ex.set2} onChange={v => update(i, 'set2', v)} />
-              <Field label="Set 3" value={ex.set3} onChange={v => update(i, 'set3', v)} />
-            </div>
-          </div>
-        ))}
+        <div className="setButtons">
+          <RepInput label="Set 1" value={ex.set1} onChange={v => update('set1', v)} />
+          <RepInput label="Set 2" value={ex.set2} onChange={v => update('set2', v)} />
+          <RepInput label="Set 3" value={ex.set3} onChange={v => update('set3', v)} />
+        </div>
 
-        <label>Session notes</label>
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Energy, difficulty, anything awkward or too easy..." />
+        <div className="difficulty">
+          <label>Difficulty</label>
+          <input value={ex.difficulty} onChange={e => update('difficulty', e.target.value)} placeholder="1–10" />
+        </div>
+      </section>
 
-        <button className="btn" onClick={() => onSave({ exercises: items, notes })}>Finish + save to cloud</button>
+      <section className="card navCard">
+        <div className="row">
+          <button className="miniBtn" onClick={back} disabled={index === 0}><ChevronLeft/> Back</button>
+          <span className="muted">{index + 1} / {items.length}</span>
+          <button className="miniBtn" onClick={next} disabled={index === items.length - 1}>Next <ChevronRight/></button>
+        </div>
+
+        {index === items.length - 1 && (
+          <>
+            <label>Session notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Energy, difficulty, anything awkward or too easy..." />
+            <button className="btn" onClick={() => onSave({ exercises: items, notes })}><Check size={18}/> Finish + save to cloud</button>
+          </>
+        )}
       </section>
     </>
   )
@@ -298,14 +343,13 @@ function Progress({ bests, body, onSaveBody, legPressChart }) {
   return (
     <>
       <h1>Progress</h1>
+
       <section className="card">
         <h2>Personal bests</h2>
         {Object.keys(bests).map(name => (
-          <div className="logitem" key={name}>
-            <div className="row">
-              <span>{name}</span>
-              <strong>{bests[name].display}</strong>
-            </div>
+          <div className="record" key={name}>
+            <span>{name}</span>
+            <strong>{bests[name].display}</strong>
           </div>
         ))}
       </section>
@@ -339,35 +383,44 @@ function Settings({ cloudStatus, reload }) {
       <h1>Settings</h1>
       <section className="card">
         <h2>Supabase</h2>
-        <p className="muted">{cloudStatus}</p>
+        <p className="status">{cloudStatus}</p>
         <button className="btn" onClick={reload}>Test / reload cloud</button>
       </section>
       <section className="card">
-        <h2>Next build</h2>
-        <p className="muted">Next step: add login, exercise videos, press-up challenge tracking, and better automatic coaching recommendations.</p>
+        <h2>Coming next</h2>
+        <p className="muted">Rest timer, exercise videos, press-up challenge, smarter progression recommendations, and Home Screen app polish.</p>
       </section>
     </>
   )
 }
 
-function Metric({ value, label }) {
-  return <div className="metric"><b>{value}</b><span>{label}</span></div>
+function Metric({ value, label, icon }) {
+  return <div className="metric"><div className="metricIcon">{icon}</div><b>{value}</b><span>{label}</span></div>
 }
 
 function Field({ label, value, onChange }) {
   return <div><label>{label}</label><input value={value} onChange={e => onChange(e.target.value)} /></div>
 }
 
+function RepInput({ label, value, onChange }) {
+  return (
+    <div className="repInput">
+      <label>{label}</label>
+      <input value={value} onChange={e => onChange(e.target.value)} inputMode="numeric" placeholder="0" />
+    </div>
+  )
+}
+
 function Chart({ data }) {
   if (!data?.length) return <p className="muted">No chart data yet.</p>
   return (
     <div className="chart">
-      <ResponsiveContainer width="100%" height={180}>
+      <ResponsiveContainer width="100%" height={190}>
         <LineChart data={data}>
           <XAxis dataKey="date" stroke="#94a3b8" />
           <YAxis stroke="#94a3b8" />
-          <Tooltip />
-          <Line type="monotone" dataKey="weight" stroke="#34d399" strokeWidth={3} />
+          <Tooltip contentStyle={{ background: '#111827', border: '1px solid #334155', borderRadius: 12 }} />
+          <Line type="monotone" dataKey="weight" stroke="#34d399" strokeWidth={4} dot={{ r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
