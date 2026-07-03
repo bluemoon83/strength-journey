@@ -515,3 +515,205 @@ select {
 .setControls .miniBtn {
   flex: 1;
 }
+
+
+/* v0.4.0 smart exercise cards */
+
+.exerciseTitleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.collapseHeader {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+  display: flex;
+  gap: 10px;
+  text-align: left;
+  align-items: flex-start;
+}
+
+.collapseHeader h3 {
+  margin: 0 0 5px;
+}
+
+.collapseIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 12px;
+  background: rgba(52,211,153,.1);
+  color: var(--green);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.collapsedSummary {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  display: block;
+}
+
+.extraTitle {
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.completedExercise {
+  border-color: rgba(52,211,153,.35);
+  background: rgba(18,38,30,.78);
+}
+
+.titleActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.completePill {
+  background: rgba(52,211,153,.14);
+  border: 1px solid rgba(52,211,153,.35);
+  color: #bbf7d0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.totalBox {
+  margin: 12px 0;
+  padding: 13px;
+  border-radius: 18px;
+  background: rgba(52,211,153,.08);
+  border: 1px solid rgba(52,211,153,.22);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.totalBox span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.totalBox strong {
+  color: var(--green);
+  font-size: 20px;
+}
+
+select {
+  width: 100%;
+  background: #0d1320;
+  color: #fff;
+  border: 1px solid #354157;
+  border-radius: 16px;
+  padding: 12px;
+  font-size: 15px;
+  outline: none;
+}
+
+.setRows {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.setRowHeader,
+.setRow {
+  display: grid;
+  grid-template-columns: 48px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.bodyweightSetHeader,
+.bodyweightSetRow {
+  grid-template-columns: 48px 1fr;
+}
+
+.setRowHeader span {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: .05em;
+}
+
+.setRow input {
+  padding: 11px;
+  text-align: center;
+}
+
+.setNumber {
+  height: 38px;
+  border-radius: 14px;
+  background: rgba(52,211,153,.1);
+  border: 1px solid rgba(52,211,153,.2);
+  color: var(--green);
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+}
+
+.setControls {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.setControls .miniBtn {
+  flex: 1;
+}
+
+.completeBtn {
+  width: 100%;
+  border: 1px solid rgba(52,211,153,.25);
+  border-radius: 18px;
+  padding: 13px 14px;
+  margin-top: 12px;
+  background: rgba(52,211,153,.12);
+  color: #bbf7d0;
+  font-weight: 900;
+  font-size: 14px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.secondaryBtn {
+  width: 100%;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 20px;
+  padding: 15px 16px;
+  margin: 4px 0 14px;
+  background: rgba(18,24,38,.82);
+  color: #fff;
+  font-weight: 900;
+  font-size: 15px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconBtn {
+  border: 1px solid rgba(251,113,133,.25);
+  background: rgba(251,113,133,.1);
+  color: #fecdd3;
+  border-radius: 14px;
+  padding: 8px;
+  display: grid;
+  place-items: center;
+}

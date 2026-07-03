@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Activity, BarChart3, Check, Dumbbell, Flame, Home, Plus, Settings as SettingsIcon, Trophy, Weight } from 'lucide-react'
+import { Activity, BarChart3, Check, ChevronDown, ChevronUp, Dumbbell, Flame, Home, Plus, Settings as SettingsIcon, Trash2, Trophy, Weight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from './supabase'
 import { profile, workoutTemplates, localSeedWorkouts } from './seed'
 import './styles.css'
 
 const today = () => new Date().toISOString().slice(0, 10)
+const equipmentOptions = ['Machine', 'Dumbbells', 'Cable', 'Bodyweight']
 
 const numberFrom = (value) => {
   const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''))
@@ -121,19 +122,21 @@ function App() {
     for (const w of workouts) {
       for (const ex of w.exercises || []) {
         const name = ex.exercise_name
-        const weight = numberFrom(ex.weight)
         const reps = [ex.set_1, ex.set_2, ex.set_3, ex.set_4, ex.set_5, ex.set_6].map(numberFrom).filter(Boolean)
+        const weights = [ex.weight_1, ex.weight_2, ex.weight_3, ex.weight_4, ex.weight_5, ex.weight_6]
+        const firstWeight = weights.find(Boolean) || ex.weight
+        const weightNumber = numberFrom(firstWeight)
 
         if (!name || !reps.length) continue
 
         const bestRep = Math.max(...reps)
-        const score = (weight || 1) * bestRep
+        const score = (weightNumber || 1) * bestRep
 
         if (!out[name] || score > out[name].score) {
           out[name] = {
-            display: `${ex.weight || ex.equipment || ''} × ${bestRep}`.trim(),
+            display: `${firstWeight || ex.equipment || ''} × ${bestRep}`.trim(),
             score,
-            weight: weight || 0
+            weight: weightNumber || 0
           }
         }
       }
@@ -145,7 +148,9 @@ function App() {
   const legPressChart = workouts
     .map(w => {
       const lp = (w.exercises || []).find(e => e.exercise_name === 'Leg Press')
-      return lp ? { date: (w.date || '').slice(5), weight: numberFrom(lp.weight) } : null
+      if (!lp) return null
+      const firstWeight = lp.weight_1 || lp.weight
+      return firstWeight ? { date: (w.date || '').slice(5), weight: numberFrom(firstWeight) } : null
     })
     .filter(Boolean)
 
@@ -171,14 +176,21 @@ function App() {
         exercise_name: ex.name,
         exercise_type: ex.type,
         equipment: ex.equipment,
-        weight: ex.weight,
-        set_1: ex.sets?.[0] || '',
-        set_2: ex.sets?.[1] || '',
-        set_3: ex.sets?.[2] || '',
-        set_4: ex.sets?.[3] || '',
-        set_5: ex.sets?.[4] || '',
-        set_6: ex.sets?.[5] || '',
+        weight: ex.sets?.[0]?.weight || ex.weight || '',
+        weight_1: ex.sets?.[0]?.weight || '',
+        weight_2: ex.sets?.[1]?.weight || '',
+        weight_3: ex.sets?.[2]?.weight || '',
+        weight_4: ex.sets?.[3]?.weight || '',
+        weight_5: ex.sets?.[4]?.weight || '',
+        weight_6: ex.sets?.[5]?.weight || '',
+        set_1: ex.sets?.[0]?.reps || '',
+        set_2: ex.sets?.[1]?.reps || '',
+        set_3: ex.sets?.[2]?.reps || '',
+        set_4: ex.sets?.[3]?.reps || '',
+        set_5: ex.sets?.[4]?.reps || '',
+        set_6: ex.sets?.[5]?.reps || '',
         target_total: ex.targetTotal || null,
+        is_extra: ex.isExtra || false,
         difficulty: ex.difficulty
       }))
 
@@ -310,12 +322,12 @@ function Workout({ onSave, bests, currentWorkout }) {
     )
   }
 
-  function updateSet(exerciseIndex, setIndex, value) {
+  function updateSet(exerciseIndex, setIndex, key, value) {
     setItems(prev =>
       prev.map((item, i) => {
         if (i !== exerciseIndex) return item
         const sets = [...item.sets]
-        sets[setIndex] = value
+        sets[setIndex] = { ...sets[setIndex], [key]: value }
         return { ...item, sets }
       })
     )
@@ -326,7 +338,14 @@ function Workout({ onSave, bests, currentWorkout }) {
       prev.map((item, i) => {
         if (i !== exerciseIndex) return item
         if (item.sets.length >= 6) return item
-        return { ...item, sets: [...item.sets, ''] }
+
+        const previousSet = item.sets[item.sets.length - 1]
+        const nextSet = {
+          weight: item.equipment === 'Bodyweight' ? '' : (previousSet?.weight || item.defaultWeight || item.weight || ''),
+          reps: ''
+        }
+
+        return { ...item, sets: [...item.sets, nextSet] }
       })
     )
   }
@@ -338,6 +357,52 @@ function Workout({ onSave, bests, currentWorkout }) {
         if (item.sets.length <= 1) return item
         return { ...item, sets: item.sets.slice(0, -1) }
       })
+    )
+  }
+
+  function addExercise() {
+    setItems(prev => [
+      ...prev,
+      {
+        name: 'Extra exercise',
+        type: 'strength',
+        equipment: 'Machine',
+        equipmentOptions,
+        target: 'Optional extra',
+        reps: '8–12',
+        defaultWeight: '',
+        targetTotal: null,
+        isExtra: true,
+        isCollapsed: false,
+        isComplete: false,
+        difficulty: '',
+        sets: [
+          { weight: '', reps: '' },
+          { weight: '', reps: '' }
+        ]
+      }
+    ])
+  }
+
+  function removeExercise(exerciseIndex) {
+    setItems(prev => prev.filter((_, i) => i !== exerciseIndex))
+  }
+
+  function toggleComplete(exerciseIndex) {
+    setItems(prev =>
+      prev.map((item, i) => {
+        if (i !== exerciseIndex) return item
+        const nextComplete = !item.isComplete
+        return { ...item, isComplete: nextComplete, isCollapsed: nextComplete }
+      })
+    )
+  }
+
+  function toggleCollapsed(exerciseIndex) {
+    setItems(prev =>
+      prev.map((item, i) =>
+        i === exerciseIndex ? { ...item, isCollapsed: !item.isCollapsed } : item
+      )
     )
   }
 
@@ -354,7 +419,7 @@ function Workout({ onSave, bests, currentWorkout }) {
       <section className="workoutList">
         {items.map((ex, index) => (
           <ExerciseCard
-            key={ex.name}
+            key={`${ex.name}-${index}`}
             index={index}
             exercise={ex}
             best={bests[ex.name]}
@@ -362,9 +427,16 @@ function Workout({ onSave, bests, currentWorkout }) {
             updateSet={updateSet}
             addSet={addSet}
             removeSet={removeSet}
+            removeExercise={removeExercise}
+            toggleComplete={toggleComplete}
+            toggleCollapsed={toggleCollapsed}
           />
         ))}
       </section>
+
+      <button className="secondaryBtn" type="button" onClick={addExercise}>
+        <Plus size={18}/> Add extra exercise
+      </button>
 
       <section className="card">
         <label>Session notes</label>
@@ -386,80 +458,137 @@ function buildWorkoutItems(workout) {
   return workout.exercises.map(ex => ({
     ...ex,
     equipment: ex.equipment || '',
-    weight: ex.defaultWeight || '',
-    sets: Array.from({ length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) }, () => ''),
-    difficulty: ''
+    isCollapsed: false,
+    isComplete: false,
+    difficulty: '',
+    sets: Array.from(
+      { length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) },
+      () => ({
+        weight: ex.equipment === 'Bodyweight' ? '' : (ex.defaultWeight || ''),
+        reps: ''
+      })
+    )
   }))
 }
 
-function ExerciseCard({ index, exercise, best, update, updateSet, addSet, removeSet }) {
-  const total = exercise.sets.reduce((sum, value) => sum + (numberFrom(value) || 0), 0)
+function ExerciseCard({ index, exercise, best, update, updateSet, addSet, removeSet, removeExercise, toggleComplete, toggleCollapsed }) {
+  const total = exercise.sets.reduce((sum, set) => sum + (numberFrom(set.reps) || 0), 0)
   const isTargetTotal = exercise.type === 'target-total'
   const isBodyweight = exercise.equipment === 'Bodyweight'
   const targetComplete = isTargetTotal && exercise.targetTotal && total >= exercise.targetTotal
+  const summary = summariseSets(exercise)
 
   return (
-    <div className="workoutExerciseCard">
+    <div className={`workoutExerciseCard ${exercise.isComplete ? 'completedExercise' : ''}`}>
       <div className="exerciseTitleRow">
-        <div>
-          <h3>{index + 1}. {exercise.name}</h3>
-          <p className="target">Target: {exercise.target} · {exercise.reps}</p>
+        <button className="collapseHeader" type="button" onClick={() => toggleCollapsed(index)}>
+          <span className="collapseIcon">{exercise.isCollapsed ? <ChevronDown size={18}/> : <ChevronUp size={18}/>}</span>
+          <span>
+            {exercise.isExtra ? (
+              <span className="extraTitle">Extra exercise</span>
+            ) : (
+              <h3>{index + 1}. {exercise.name}</h3>
+            )}
+            <span className="collapsedSummary">{summary || exercise.target}</span>
+          </span>
+        </button>
+
+        <div className="titleActions">
+          {(exercise.isComplete || targetComplete) && <span className="completePill">Complete</span>}
+          {exercise.isExtra && (
+            <button className="iconBtn" type="button" onClick={() => removeExercise(index)} aria-label="Remove exercise">
+              <Trash2 size={16}/>
+            </button>
+          )}
         </div>
-        {targetComplete && <span className="completePill">Complete</span>}
       </div>
 
-      <p className="muted">
-        Previous best: <strong>{best?.display || 'Not logged yet'}</strong>
-      </p>
+      {!exercise.isCollapsed && (
+        <>
+          {exercise.isExtra ? (
+            <Field label="Exercise name" value={exercise.name} onChange={v => update(index, 'name', v)} />
+          ) : (
+            <p className="target">Target: {exercise.target} · {exercise.reps}</p>
+          )}
 
-      {isTargetTotal && (
-        <div className="totalBox">
-          <span>Running total</span>
-          <strong>{total} / {exercise.targetTotal}</strong>
-        </div>
-      )}
+          <p className="muted">
+            Previous best: <strong>{best?.display || 'Not logged yet'}</strong>
+          </p>
 
-      <div className="grid">
-        <SelectField
-          label="Equipment"
-          value={exercise.equipment}
-          options={exercise.equipmentOptions || ['Machine', 'Dumbbells', 'Cable', 'Bodyweight']}
-          onChange={v => update(index, 'equipment', v)}
-        />
+          {isTargetTotal && (
+            <div className="totalBox">
+              <span>Running total</span>
+              <strong>{targetComplete ? '✓ ' : ''}{total} / {exercise.targetTotal}</strong>
+            </div>
+          )}
 
-        {!isBodyweight && (
-          <Field label="Weight" value={exercise.weight} onChange={v => update(index, 'weight', v)} />
-        )}
+          <div className="grid">
+            <SelectField
+              label="Equipment"
+              value={exercise.equipment}
+              options={exercise.equipmentOptions || equipmentOptions}
+              onChange={v => update(index, 'equipment', v)}
+            />
 
-        {isBodyweight && (
-          <div>
-            <label>Weight</label>
-            <div className="readOnlyField">Bodyweight</div>
+            <Field label="Difficulty" value={exercise.difficulty} onChange={v => update(index, 'difficulty', v)} />
           </div>
-        )}
 
-        <Field label="Difficulty" value={exercise.difficulty} onChange={v => update(index, 'difficulty', v)} />
-      </div>
+          <div className="setRows">
+            <div className={isBodyweight ? 'setRowHeader bodyweightSetHeader' : 'setRowHeader'}>
+              <span>Set</span>
+              {!isBodyweight && <span>Weight</span>}
+              <span>{exercise.type === 'timed' ? 'Seconds' : 'Reps'}</span>
+            </div>
 
-      <div className={isTargetTotal ? 'sets variableSets' : 'sets'}>
-        {exercise.sets.map((value, setIndex) => (
-          <Field
-            key={setIndex}
-            label={exercise.type === 'timed' ? `Hold ${setIndex + 1}` : `Set ${setIndex + 1}`}
-            value={value}
-            onChange={v => updateSet(index, setIndex, v)}
-          />
-        ))}
-      </div>
+            {exercise.sets.map((set, setIndex) => (
+              <div className={isBodyweight ? 'setRow bodyweightSetRow' : 'setRow'} key={setIndex}>
+                <span className="setNumber">{setIndex + 1}</span>
 
-      {isTargetTotal && (
-        <div className="setControls">
-          <button type="button" className="miniBtn" onClick={() => addSet(index)}><Plus size={16}/> Add set</button>
-          <button type="button" className="miniBtn" onClick={() => removeSet(index)}>Remove set</button>
-        </div>
+                {!isBodyweight && (
+                  <input
+                    value={set.weight}
+                    onChange={e => updateSet(index, setIndex, 'weight', e.target.value)}
+                    placeholder="kg"
+                  />
+                )}
+
+                <input
+                  value={set.reps}
+                  onChange={e => updateSet(index, setIndex, 'reps', e.target.value)}
+                  placeholder={exercise.type === 'timed' ? 'sec' : 'reps'}
+                  inputMode="numeric"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="setControls">
+            <button type="button" className="miniBtn" onClick={() => addSet(index)}><Plus size={16}/> Add set</button>
+            <button type="button" className="miniBtn" onClick={() => removeSet(index)}>Remove set</button>
+          </div>
+
+          <button type="button" className="completeBtn" onClick={() => toggleComplete(index)}>
+            <Check size={18}/> {exercise.isComplete ? 'Reopen exercise' : 'Mark exercise complete'}
+          </button>
+        </>
       )}
     </div>
   )
+}
+
+function summariseSets(exercise) {
+  const sets = exercise.sets
+    .filter(set => set.reps)
+    .map(set => set.weight ? `${set.weight} × ${set.reps}` : set.reps)
+
+  if (!sets.length) return ''
+
+  if (exercise.type === 'target-total') {
+    const total = exercise.sets.reduce((sum, set) => sum + (numberFrom(set.reps) || 0), 0)
+    return `${sets.join(' / ')} · Total ${total}`
+  }
+
+  return sets.join(' / ')
 }
 
 function History({ workouts }) {
@@ -483,9 +612,19 @@ function History({ workouts }) {
 }
 
 function formatHistoryExercise(ex) {
-  const sets = [ex.set_1, ex.set_2, ex.set_3, ex.set_4, ex.set_5, ex.set_6].filter(Boolean).join('/')
+  const weights = [ex.weight_1, ex.weight_2, ex.weight_3, ex.weight_4, ex.weight_5, ex.weight_6]
+  const reps = [ex.set_1, ex.set_2, ex.set_3, ex.set_4, ex.set_5, ex.set_6]
+  const sets = reps
+    .map((rep, index) => {
+      if (!rep) return null
+      const weight = weights[index] || ex.weight
+      return weight ? `${weight} × ${rep}` : rep
+    })
+    .filter(Boolean)
+    .join(' / ')
+
   const equipment = ex.equipment ? ` (${ex.equipment})` : ''
-  return `${ex.exercise_name}${equipment}: ${ex.weight || ''} · ${sets}`.trim()
+  return `${ex.exercise_name}${equipment}: ${sets}`.trim()
 }
 
 function Progress({ bests, body, onSaveBody, legPressChart }) {
