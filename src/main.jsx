@@ -23,6 +23,19 @@ function App() {
 
   async function ensureProfile() {
     if (profileId) return profileId
+    const { data: existing } = await supabase
+  .from('profiles')
+  .select('id')
+  .eq('name', profile.name)
+  .order('created_at', { ascending: false })
+  .limit(1)
+  .maybeSingle()
+
+if (existing) {
+  setProfileId(existing.id)
+  localStorage.setItem('sj_profile_id', existing.id)
+  return existing.id
+}
     const { data, error } = await supabase
       .from('profiles')
       .insert({
