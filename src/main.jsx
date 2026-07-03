@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Activity, BarChart3, Check, Dumbbell, Flame, Home, Settings as SettingsIcon, Trophy, Weight } from 'lucide-react'
+import { Activity, BarChart3, Check, Dumbbell, Flame, Home, Plus, Settings as SettingsIcon, Trophy, Weight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from './supabase'
 import { profile, workoutTemplates, localSeedWorkouts } from './seed'
@@ -14,23 +14,17 @@ const numberFrom = (value) => {
 }
 
 function getNextWorkout(workouts) {
-  if (!workouts?.length) {
-    return workoutTemplates[0]
-  }
+  if (!workouts?.length) return workoutTemplates[0]
 
   const latestWorkout = [...workouts]
     .filter(w => w?.date && w?.name)
     .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
 
-  if (!latestWorkout) {
-    return workoutTemplates[0]
-  }
+  if (!latestWorkout) return workoutTemplates[0]
 
   const currentIndex = workoutTemplates.findIndex(template => template.name === latestWorkout.name)
 
-  if (currentIndex === -1) {
-    return workoutTemplates[0]
-  }
+  if (currentIndex === -1) return workoutTemplates[0]
 
   return workoutTemplates[(currentIndex + 1) % workoutTemplates.length]
 }
@@ -128,7 +122,7 @@ function App() {
       for (const ex of w.exercises || []) {
         const name = ex.exercise_name
         const weight = numberFrom(ex.weight)
-        const reps = [ex.set_1, ex.set_2, ex.set_3].map(numberFrom).filter(Boolean)
+        const reps = [ex.set_1, ex.set_2, ex.set_3, ex.set_4, ex.set_5, ex.set_6].map(numberFrom).filter(Boolean)
 
         if (!name || !reps.length) continue
 
@@ -137,7 +131,7 @@ function App() {
 
         if (!out[name] || score > out[name].score) {
           out[name] = {
-            display: `${ex.weight} × ${bestRep}`,
+            display: `${ex.weight || ex.equipment || ''} × ${bestRep}`.trim(),
             score,
             weight: weight || 0
           }
@@ -175,10 +169,16 @@ function App() {
       const rows = formData.exercises.map(ex => ({
         workout_id: workout.id,
         exercise_name: ex.name,
+        exercise_type: ex.type,
+        equipment: ex.equipment,
         weight: ex.weight,
-        set_1: ex.set1,
-        set_2: ex.set2,
-        set_3: ex.set3,
+        set_1: ex.sets?.[0] || '',
+        set_2: ex.sets?.[1] || '',
+        set_3: ex.sets?.[2] || '',
+        set_4: ex.sets?.[3] || '',
+        set_5: ex.sets?.[4] || '',
+        set_6: ex.sets?.[5] || '',
+        target_total: ex.targetTotal || null,
         difficulty: ex.difficulty
       }))
 
@@ -295,24 +295,10 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart, currentW
 
 function Workout({ onSave, bests, currentWorkout }) {
   const [notes, setNotes] = useState('')
-  const [items, setItems] = useState(() => currentWorkout.exercises.map(ex => ({
-    ...ex,
-    weight: ex.defaultWeight || '',
-    set1: '',
-    set2: '',
-    set3: '',
-    difficulty: ''
-  })))
+  const [items, setItems] = useState(() => buildWorkoutItems(currentWorkout))
 
   useEffect(() => {
-    setItems(currentWorkout.exercises.map(ex => ({
-      ...ex,
-      weight: ex.defaultWeight || '',
-      set1: '',
-      set2: '',
-      set3: '',
-      difficulty: ''
-    })))
+    setItems(buildWorkoutItems(currentWorkout))
     setNotes('')
   }, [currentWorkout.name])
 
@@ -321,6 +307,37 @@ function Workout({ onSave, bests, currentWorkout }) {
       prev.map((item, i) =>
         i === index ? { ...item, [key]: value } : item
       )
+    )
+  }
+
+  function updateSet(exerciseIndex, setIndex, value) {
+    setItems(prev =>
+      prev.map((item, i) => {
+        if (i !== exerciseIndex) return item
+        const sets = [...item.sets]
+        sets[setIndex] = value
+        return { ...item, sets }
+      })
+    )
+  }
+
+  function addSet(exerciseIndex) {
+    setItems(prev =>
+      prev.map((item, i) => {
+        if (i !== exerciseIndex) return item
+        if (item.sets.length >= 6) return item
+        return { ...item, sets: [...item.sets, ''] }
+      })
+    )
+  }
+
+  function removeSet(exerciseIndex) {
+    setItems(prev =>
+      prev.map((item, i) => {
+        if (i !== exerciseIndex) return item
+        if (item.sets.length <= 1) return item
+        return { ...item, sets: item.sets.slice(0, -1) }
+      })
     )
   }
 
@@ -336,24 +353,16 @@ function Workout({ onSave, bests, currentWorkout }) {
 
       <section className="workoutList">
         {items.map((ex, index) => (
-          <div className="workoutExerciseCard" key={ex.name}>
-            <h3>{index + 1}. {ex.name}</h3>
-            <p className="target">Target: {ex.target} · {ex.reps}</p>
-            <p className="muted">
-              Previous best: <strong>{bests[ex.name]?.display || 'Not logged yet'}</strong>
-            </p>
-
-            <div className="grid">
-              <Field label="Weight" value={ex.weight} onChange={v => update(index, 'weight', v)} />
-              <Field label="Difficulty" value={ex.difficulty} onChange={v => update(index, 'difficulty', v)} />
-            </div>
-
-            <div className="sets">
-              <Field label="Set 1" value={ex.set1} onChange={v => update(index, 'set1', v)} />
-              <Field label="Set 2" value={ex.set2} onChange={v => update(index, 'set2', v)} />
-              <Field label="Set 3" value={ex.set3} onChange={v => update(index, 'set3', v)} />
-            </div>
-          </div>
+          <ExerciseCard
+            key={ex.name}
+            index={index}
+            exercise={ex}
+            best={bests[ex.name]}
+            update={update}
+            updateSet={updateSet}
+            addSet={addSet}
+            removeSet={removeSet}
+          />
         ))}
       </section>
 
@@ -373,6 +382,86 @@ function Workout({ onSave, bests, currentWorkout }) {
   )
 }
 
+function buildWorkoutItems(workout) {
+  return workout.exercises.map(ex => ({
+    ...ex,
+    equipment: ex.equipment || '',
+    weight: ex.defaultWeight || '',
+    sets: Array.from({ length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) }, () => ''),
+    difficulty: ''
+  }))
+}
+
+function ExerciseCard({ index, exercise, best, update, updateSet, addSet, removeSet }) {
+  const total = exercise.sets.reduce((sum, value) => sum + (numberFrom(value) || 0), 0)
+  const isTargetTotal = exercise.type === 'target-total'
+  const isBodyweight = exercise.equipment === 'Bodyweight'
+  const targetComplete = isTargetTotal && exercise.targetTotal && total >= exercise.targetTotal
+
+  return (
+    <div className="workoutExerciseCard">
+      <div className="exerciseTitleRow">
+        <div>
+          <h3>{index + 1}. {exercise.name}</h3>
+          <p className="target">Target: {exercise.target} · {exercise.reps}</p>
+        </div>
+        {targetComplete && <span className="completePill">Complete</span>}
+      </div>
+
+      <p className="muted">
+        Previous best: <strong>{best?.display || 'Not logged yet'}</strong>
+      </p>
+
+      {isTargetTotal && (
+        <div className="totalBox">
+          <span>Running total</span>
+          <strong>{total} / {exercise.targetTotal}</strong>
+        </div>
+      )}
+
+      <div className="grid">
+        <SelectField
+          label="Equipment"
+          value={exercise.equipment}
+          options={exercise.equipmentOptions || ['Machine', 'Dumbbells', 'Cable', 'Bodyweight']}
+          onChange={v => update(index, 'equipment', v)}
+        />
+
+        {!isBodyweight && (
+          <Field label="Weight" value={exercise.weight} onChange={v => update(index, 'weight', v)} />
+        )}
+
+        {isBodyweight && (
+          <div>
+            <label>Weight</label>
+            <div className="readOnlyField">Bodyweight</div>
+          </div>
+        )}
+
+        <Field label="Difficulty" value={exercise.difficulty} onChange={v => update(index, 'difficulty', v)} />
+      </div>
+
+      <div className={isTargetTotal ? 'sets variableSets' : 'sets'}>
+        {exercise.sets.map((value, setIndex) => (
+          <Field
+            key={setIndex}
+            label={exercise.type === 'timed' ? `Hold ${setIndex + 1}` : `Set ${setIndex + 1}`}
+            value={value}
+            onChange={v => updateSet(index, setIndex, v)}
+          />
+        ))}
+      </div>
+
+      {isTargetTotal && (
+        <div className="setControls">
+          <button type="button" className="miniBtn" onClick={() => addSet(index)}><Plus size={16}/> Add set</button>
+          <button type="button" className="miniBtn" onClick={() => removeSet(index)}>Remove set</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function History({ workouts }) {
   return (
     <>
@@ -385,12 +474,18 @@ function History({ workouts }) {
             <span className="pill">{w.name}</span>
           </div>
           <p className="muted">
-            {(w.exercises || []).map(ex => `${ex.exercise_name}: ${ex.weight} · ${ex.set_1}/${ex.set_2}/${ex.set_3}`).join('\n')}
+            {(w.exercises || []).map(formatHistoryExercise).join('\n')}
           </p>
         </section>
       ))}
     </>
   )
+}
+
+function formatHistoryExercise(ex) {
+  const sets = [ex.set_1, ex.set_2, ex.set_3, ex.set_4, ex.set_5, ex.set_6].filter(Boolean).join('/')
+  const equipment = ex.equipment ? ` (${ex.equipment})` : ''
+  return `${ex.exercise_name}${equipment}: ${ex.weight || ''} · ${sets}`.trim()
 }
 
 function Progress({ bests, body, onSaveBody, legPressChart }) {
@@ -457,6 +552,17 @@ function Metric({ value, label, icon }) {
 
 function Field({ label, value, onChange }) {
   return <div><label>{label}</label><input value={value} onChange={e => onChange(e.target.value)} /></div>
+}
+
+function SelectField({ label, value, options, onChange }) {
+  return (
+    <div>
+      <label>{label}</label>
+      <select value={value} onChange={e => onChange(e.target.value)}>
+        {options.map(option => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </div>
+  )
 }
 
 function Chart({ data }) {

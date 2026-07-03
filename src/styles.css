@@ -436,3 +436,82 @@ textarea {
   gap: 12px;
   margin-top: 16px;
 }
+
+
+/* v0.3.1 flexible sets and equipment */
+
+.exerciseTitleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.completePill {
+  background: rgba(52,211,153,.14);
+  border: 1px solid rgba(52,211,153,.35);
+  color: #bbf7d0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.totalBox {
+  margin: 12px 0;
+  padding: 13px;
+  border-radius: 18px;
+  background: rgba(52,211,153,.08);
+  border: 1px solid rgba(52,211,153,.22);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.totalBox span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.totalBox strong {
+  color: var(--green);
+  font-size: 20px;
+}
+
+select {
+  width: 100%;
+  background: #0d1320;
+  color: #fff;
+  border: 1px solid #354157;
+  border-radius: 16px;
+  padding: 12px;
+  font-size: 15px;
+  outline: none;
+}
+
+.readOnlyField {
+  width: 100%;
+  background: rgba(13,19,32,.55);
+  color: var(--muted);
+  border: 1px solid rgba(53,65,87,.6);
+  border-radius: 16px;
+  padding: 12px;
+  font-size: 15px;
+}
+
+.variableSets {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.setControls {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.setControls .miniBtn {
+  flex: 1;
+}
