@@ -9,8 +9,8 @@ export const profile = {
 }
 
 export const nextWorkout = {
-  name: 'Workout C',
-  subtitle: 'Full Body Strength',
+  name: 'Full Body Strength',
+  subtitle: "Today's workout",
   exercises: [
     { name: 'Leg Press', target: '82 kg', defaultWeight: '82 kg', reps: '8–10' },
     { name: 'Chest-Supported Row', target: 'Find 8–10 hard reps', defaultWeight: '', reps: '8–10' },
@@ -25,7 +25,7 @@ export const nextWorkout = {
 export const localSeedWorkouts = [
   {
     date: '2026-06-30',
-    name: 'Workout A',
+    name: 'Lower Body & Push',
     exercises: [
       { exercise_name: 'Leg Press', weight: '68 kg', set_1: '8', set_2: '8', set_3: '8' },
       { exercise_name: 'Chest Press', weight: '37 kg', set_1: '8', set_2: '8', set_3: '7' },
@@ -36,7 +36,7 @@ export const localSeedWorkouts = [
   },
   {
     date: '2026-07-02',
-    name: 'Workout B',
+    name: 'Upper Pull & Core',
     exercises: [
       { exercise_name: 'Leg Press', weight: '77 kg', set_1: '10', set_2: '10', set_3: '10' },
       { exercise_name: 'Lat Pulldown', weight: '40 kg', set_1: '8', set_2: '8', set_3: '8' },

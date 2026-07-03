@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Activity, BarChart3, Check, ChevronLeft, ChevronRight, Dumbbell, Flame, Home, Plus, Settings as SettingsIcon, Timer, Trophy, Weight } from 'lucide-react'
+import { Activity, BarChart3, Check, Dumbbell, Flame, Home, Settings as SettingsIcon, Trophy, Weight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from './supabase'
 import { profile, nextWorkout, localSeedWorkouts } from './seed'
 import './styles.css'
 
 const today = () => new Date().toISOString().slice(0, 10)
+
 const numberFrom = (value) => {
   const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''))
   return Number.isFinite(n) ? n : null
@@ -19,23 +20,27 @@ function App() {
   const [body, setBody] = useState([{ date: '2026-07-02', weight_kg: 89, waist_cm: '' }])
   const [cloudStatus, setCloudStatus] = useState('Ready')
 
-  useEffect(() => { loadCloudData() }, [])
+  useEffect(() => {
+    loadCloudData()
+  }, [])
 
   async function ensureProfile() {
     if (profileId) return profileId
-    const { data: existing } = await supabase
-  .from('profiles')
-  .select('id')
-  .eq('name', profile.name)
-  .order('created_at', { ascending: false })
-  .limit(1)
-  .maybeSingle()
 
-if (existing) {
-  setProfileId(existing.id)
-  localStorage.setItem('sj_profile_id', existing.id)
-  return existing.id
-}
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('name', profile.name)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (existing) {
+      setProfileId(existing.id)
+      localStorage.setItem('sj_profile_id', existing.id)
+      return existing.id
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .insert({
@@ -48,7 +53,9 @@ if (existing) {
       })
       .select()
       .single()
+
     if (error) throw error
+
     setProfileId(data.id)
     localStorage.setItem('sj_profile_id', data.id)
     return data.id
@@ -92,19 +99,28 @@ if (existing) {
 
   const bests = useMemo(() => {
     const out = {}
+
     for (const w of workouts) {
       for (const ex of w.exercises || []) {
         const name = ex.exercise_name
         const weight = numberFrom(ex.weight)
         const reps = [ex.set_1, ex.set_2, ex.set_3].map(numberFrom).filter(Boolean)
+
         if (!name || !reps.length) continue
+
         const bestRep = Math.max(...reps)
         const score = (weight || 1) * bestRep
+
         if (!out[name] || score > out[name].score) {
-          out[name] = { display: `${ex.weight} × ${bestRep}`, score, weight: weight || 0 }
+          out[name] = {
+            display: `${ex.weight} × ${bestRep}`,
+            score,
+            weight: weight || 0
+          }
         }
       }
     }
+
     return out
   }, [workouts])
 
@@ -118,6 +134,7 @@ if (existing) {
   async function saveWorkout(formData) {
     try {
       const pid = await ensureProfile()
+
       const { data: workout, error: wErr } = await supabase
         .from('workouts')
         .insert({
@@ -155,9 +172,16 @@ if (existing) {
   async function saveBody(weight, waist) {
     try {
       const pid = await ensureProfile()
-      const row = { profile_id: pid, update_date: today(), weight_kg: weight, waist_cm: waist || null }
+      const row = {
+        profile_id: pid,
+        update_date: today(),
+        weight_kg: weight,
+        waist_cm: waist || null
+      }
+
       const { error } = await supabase.from('body_updates').insert(row)
       if (error) throw error
+
       await loadCloudData()
       alert('Body update saved.')
     } catch (err) {
@@ -202,9 +226,9 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart }) {
       <section className="coachCard">
         <div className="coachIcon"><Flame size={22}/></div>
         <div>
-          <div className="coachLabel">AI Coach</div>
-          <h2>Workout C is ready</h2>
-          <p>Today’s main target is <strong>82kg Leg Press</strong>. Keep planks at <strong>35 seconds</strong> and stay controlled.</p>
+          <div className="coachLabel">Today&apos;s workout</div>
+          <h2>{nextWorkout.name}</h2>
+          <p>Main target: <strong>82kg Leg Press</strong>. Keep planks around <strong>35 seconds</strong> with good form.</p>
         </div>
       </section>
 
@@ -268,8 +292,8 @@ function Workout({ onSave, bests }) {
     <>
       <header className="workoutHeader">
         <div>
-          <div className="eyebrow">{nextWorkout.name}</div>
-          <h1>{nextWorkout.subtitle}</h1>
+          <div className="eyebrow">{nextWorkout.subtitle}</div>
+          <h1>{nextWorkout.name}</h1>
           <p className="muted">{items.length} exercises · 45–60 minutes</p>
         </div>
       </header>
@@ -325,7 +349,7 @@ function History({ workouts }) {
             <span className="pill">{w.name}</span>
           </div>
           <p className="muted">
-            {(w.exercises || []).map(ex => `${ex.exercise_name}: ${ex.weight} · ${ex.set_1}/${ex.set_2}/${ex.set_3}`).join('\n')}
+            {(w.exercises || []).map(ex => `${ex.exercise_name}: ${ex.weight} · ${ex.set_1}/${ex.set_2}/${ex.set_3}`).join('\\n')}
           </p>
         </section>
       ))}
@@ -385,7 +409,7 @@ function Settings({ cloudStatus, reload }) {
       </section>
       <section className="card">
         <h2>Coming next</h2>
-        <p className="muted">Rest timer, exercise videos, press-up challenge, smarter progression recommendations, and Home Screen app polish.</p>
+        <p className="muted">Automatic workout rotation, rest timer, exercise videos, press-up challenge, and smarter progression recommendations.</p>
       </section>
     </>
   )
@@ -399,17 +423,9 @@ function Field({ label, value, onChange }) {
   return <div><label>{label}</label><input value={value} onChange={e => onChange(e.target.value)} /></div>
 }
 
-function RepInput({ label, value, onChange }) {
-  return (
-    <div className="repInput">
-      <label>{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)} inputMode="numeric" placeholder="0" />
-    </div>
-  )
-}
-
 function Chart({ data }) {
   if (!data?.length) return <p className="muted">No chart data yet.</p>
+
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height={190}>
