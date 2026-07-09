@@ -8,6 +8,7 @@ import './styles.css'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const equipmentOptions = ['Machine', 'Dumbbells', 'Cable', 'Bodyweight']
+const workoutDraftKey = 'sj_workout_draft'
 
 const numberFrom = (value) => {
   const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''))
@@ -30,18 +31,62 @@ function getNextWorkout(workouts) {
   return workoutTemplates[(currentIndex + 1) % workoutTemplates.length]
 }
 
+function getTemplateByName(name) {
+  return workoutTemplates.find(template => template.name === name)
+}
+
+function loadStoredWorkoutDraft() {
+  try {
+    const saved = localStorage.getItem(workoutDraftKey)
+    return saved ? JSON.parse(saved) : null
+  } catch {
+    return null
+  }
+}
+
+function createWorkoutDraft(workout) {
+  return {
+    workoutName: workout.name,
+    notes: '',
+    exercises: buildWorkoutItems(workout)
+  }
+}
+
 function App() {
   const [tab, setTab] = useState('home')
   const [profileId, setProfileId] = useState(localStorage.getItem('sj_profile_id'))
   const [workouts, setWorkouts] = useState(localSeedWorkouts)
   const [body, setBody] = useState([{ date: '2026-07-02', weight_kg: 89, waist_cm: '' }])
   const [cloudStatus, setCloudStatus] = useState('Ready')
+  const [workoutDraft, setWorkoutDraft] = useState(loadStoredWorkoutDraft)
 
   useEffect(() => {
     loadCloudData()
   }, [])
 
-  const currentWorkout = useMemo(() => getNextWorkout(workouts), [workouts])
+  const nextWorkout = useMemo(() => getNextWorkout(workouts), [workouts])
+
+  const currentWorkout = useMemo(() => {
+    if (workoutDraft?.workoutName) {
+      return getTemplateByName(workoutDraft.workoutName) || nextWorkout
+    }
+
+    return nextWorkout
+  }, [nextWorkout, workoutDraft?.workoutName])
+
+  useEffect(() => {
+    if (!workoutDraft) {
+      setWorkoutDraft(createWorkoutDraft(nextWorkout))
+    }
+  }, [nextWorkout.name, workoutDraft])
+
+  useEffect(() => {
+    if (workoutDraft) {
+      localStorage.setItem(workoutDraftKey, JSON.stringify(workoutDraft))
+    } else {
+      localStorage.removeItem(workoutDraftKey)
+    }
+  }, [workoutDraft])
 
   async function ensureProfile() {
     if (profileId) return profileId
@@ -197,12 +242,19 @@ function App() {
       const { error: sErr } = await supabase.from('workout_sets').insert(rows)
       if (sErr) throw sErr
 
+      setWorkoutDraft(null)
       await loadCloudData()
       setTab('history')
       alert('Workout saved to Supabase.')
     } catch (err) {
       alert('Could not save workout: ' + err.message)
     }
+  }
+
+  function resetWorkoutDraft() {
+    const freshDraft = createWorkoutDraft(nextWorkout)
+    setWorkoutDraft(freshDraft)
+    localStorage.setItem(workoutDraftKey, JSON.stringify(freshDraft))
   }
 
   async function saveBody(weight, waist) {
@@ -229,7 +281,7 @@ function App() {
     <div>
       <main className="app">
         {tab === 'home' && <Dashboard workouts={workouts} body={body} bests={bests} cloudStatus={cloudStatus} legPressChart={legPressChart} currentWorkout={currentWorkout} />}
-        {tab === 'workout' && <Workout onSave={saveWorkout} bests={bests} currentWorkout={currentWorkout} />}
+        {tab === 'workout' && <Workout onSave={saveWorkout} bests={bests} currentWorkout={currentWorkout} workoutDraft={workoutDraft} setWorkoutDraft={setWorkoutDraft} resetWorkoutDraft={resetWorkoutDraft} />}
         {tab === 'history' && <History workouts={workouts} />}
         {tab === 'progress' && <Progress bests={bests} body={body} onSaveBody={saveBody} legPressChart={legPressChart} />}
         {tab === 'settings' && <Settings cloudStatus={cloudStatus} reload={loadCloudData} />}
@@ -305,37 +357,42 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart, currentW
   )
 }
 
-function Workout({ onSave, bests, currentWorkout }) {
-  const [notes, setNotes] = useState('')
-  const [items, setItems] = useState(() => buildWorkoutItems(currentWorkout))
+function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft }) {
+  const items = workoutDraft?.exercises || []
+  const notes = workoutDraft?.notes || ''
 
-  useEffect(() => {
-    setItems(buildWorkoutItems(currentWorkout))
-    setNotes('')
-  }, [currentWorkout.name])
+  function updateDraft(updater) {
+    setWorkoutDraft(prev => {
+      const base = prev || createWorkoutDraft(currentWorkout)
+      return updater(base)
+    })
+  }
 
   function update(index, key, value) {
-    setItems(prev =>
-      prev.map((item, i) =>
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) =>
         i === index ? { ...item, [key]: value } : item
       )
-    )
+    }))
   }
 
   function updateSet(exerciseIndex, setIndex, key, value) {
-    setItems(prev =>
-      prev.map((item, i) => {
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) => {
         if (i !== exerciseIndex) return item
         const sets = [...item.sets]
         sets[setIndex] = { ...sets[setIndex], [key]: value }
         return { ...item, sets }
       })
-    )
+    }))
   }
 
   function addSet(exerciseIndex) {
-    setItems(prev =>
-      prev.map((item, i) => {
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) => {
         if (i !== exerciseIndex) return item
         if (item.sets.length >= 6) return item
 
@@ -347,63 +404,84 @@ function Workout({ onSave, bests, currentWorkout }) {
 
         return { ...item, sets: [...item.sets, nextSet] }
       })
-    )
+    }))
   }
 
   function removeSet(exerciseIndex) {
-    setItems(prev =>
-      prev.map((item, i) => {
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) => {
         if (i !== exerciseIndex) return item
         if (item.sets.length <= 1) return item
         return { ...item, sets: item.sets.slice(0, -1) }
       })
-    )
+    }))
   }
 
   function addExercise() {
-    setItems(prev => [
-      ...prev,
-      {
-        name: 'Extra exercise',
-        type: 'strength',
-        equipment: 'Machine',
-        equipmentOptions,
-        target: 'Optional extra',
-        reps: '8–12',
-        defaultWeight: '',
-        targetTotal: null,
-        isExtra: true,
-        isCollapsed: false,
-        isComplete: false,
-        difficulty: '',
-        sets: [
-          { weight: '', reps: '' },
-          { weight: '', reps: '' }
-        ]
-      }
-    ])
+    updateDraft(draft => ({
+      ...draft,
+      exercises: [
+        ...draft.exercises,
+        {
+          name: 'Extra exercise',
+          type: 'strength',
+          equipment: 'Machine',
+          equipmentOptions,
+          target: 'Optional extra',
+          reps: '8–12',
+          defaultWeight: '',
+          targetTotal: null,
+          isExtra: true,
+          isCollapsed: false,
+          isComplete: false,
+          difficulty: '',
+          sets: [
+            { weight: '', reps: '' },
+            { weight: '', reps: '' }
+          ]
+        }
+      ]
+    }))
   }
 
   function removeExercise(exerciseIndex) {
-    setItems(prev => prev.filter((_, i) => i !== exerciseIndex))
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.filter((_, i) => i !== exerciseIndex)
+    }))
   }
 
   function toggleComplete(exerciseIndex) {
-    setItems(prev =>
-      prev.map((item, i) => {
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) => {
         if (i !== exerciseIndex) return item
         const nextComplete = !item.isComplete
         return { ...item, isComplete: nextComplete, isCollapsed: nextComplete }
       })
-    )
+    }))
   }
 
   function toggleCollapsed(exerciseIndex) {
-    setItems(prev =>
-      prev.map((item, i) =>
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) =>
         i === exerciseIndex ? { ...item, isCollapsed: !item.isCollapsed } : item
       )
-    )
+    }))
+  }
+
+  function updateNotes(value) {
+    updateDraft(draft => ({
+      ...draft,
+      notes: value
+    }))
+  }
+
+  function handleReset() {
+    const confirmed = window.confirm('Clear your current workout entries and start again?')
+    if (confirmed) resetWorkoutDraft()
   }
 
   return (
@@ -415,6 +493,11 @@ function Workout({ onSave, bests, currentWorkout }) {
           <p className="muted">{items.length} exercises · 45–60 minutes</p>
         </div>
       </header>
+
+      <section className="card subtle">
+        <h2>Workout draft saved</h2>
+        <p className="muted">You can check History or Progress and come back without losing this workout.</p>
+      </section>
 
       <section className="workoutList">
         {items.map((ex, index) => (
@@ -442,12 +525,16 @@ function Workout({ onSave, bests, currentWorkout }) {
         <label>Session notes</label>
         <textarea
           value={notes}
-          onChange={e => setNotes(e.target.value)}
+          onChange={e => updateNotes(e.target.value)}
           placeholder="Energy, difficulty, anything awkward or too easy..."
         />
 
         <button className="btn" onClick={() => onSave({ exercises: items, notes })}>
           <Check size={18}/> Finish + save to cloud
+        </button>
+
+        <button className="secondaryBtn" type="button" onClick={handleReset}>
+          Start this workout again
         </button>
       </section>
     </>
