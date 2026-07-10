@@ -717,3 +717,53 @@ select {
   display: grid;
   place-items: center;
 }
+
+
+/* v0.4.2 train smarter */
+
+.previousBox {
+  margin: 12px 0;
+  padding: 13px;
+  border-radius: 18px;
+  background: rgba(148,163,184,.08);
+  border: 1px solid rgba(148,163,184,.16);
+  display: grid;
+  gap: 10px;
+}
+
+.previousBox span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.previousBox strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.ratingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+  margin: 8px 0 16px;
+}
+
+.ratingBtn {
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 16px;
+  padding: 12px 10px;
+  background: rgba(15,23,42,.75);
+  color: #fff;
+  font-weight: 850;
+}
+
+.ratingBtn.active {
+  background: rgba(52,211,153,.14);
+  border-color: rgba(52,211,153,.45);
+  color: #bbf7d0;
+}

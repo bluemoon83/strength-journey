@@ -8,11 +8,19 @@ import './styles.css'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const equipmentOptions = ['Machine', 'Dumbbells', 'Cable', 'Bodyweight']
+const weightUnitOptions = ['kg', 'lb']
 const workoutDraftKey = 'sj_workout_draft'
 
 const numberFrom = (value) => {
   const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''))
   return Number.isFinite(n) ? n : null
+}
+
+const cleanWeight = (value) => String(value || '').replace(/[^\d.]/g, '')
+
+function formatWeight(value, unit = 'kg') {
+  const clean = cleanWeight(value)
+  return clean ? `${clean} ${unit}` : ''
 }
 
 function getNextWorkout(workouts) {
@@ -48,6 +56,7 @@ function createWorkoutDraft(workout) {
   return {
     workoutName: workout.name,
     notes: '',
+    rating: '',
     exercises: buildWorkoutItems(workout)
   }
 }
@@ -190,6 +199,19 @@ function App() {
     return out
   }, [workouts])
 
+  const previousByExercise = useMemo(() => {
+    const out = {}
+
+    for (const workout of [...workouts].reverse()) {
+      for (const exercise of workout.exercises || []) {
+        if (!exercise.exercise_name || out[exercise.exercise_name]) continue
+        out[exercise.exercise_name] = exercise
+      }
+    }
+
+    return out
+  }, [workouts])
+
   const legPressChart = workouts
     .map(w => {
       const lp = (w.exercises || []).find(e => e.exercise_name === 'Leg Press')
@@ -209,7 +231,7 @@ function App() {
           profile_id: pid,
           workout_date: today(),
           workout_name: currentWorkout.name,
-          notes: formData.notes
+          notes: [formData.notes, formData.rating ? `Session rating: ${formData.rating}` : ''].filter(Boolean).join('\n')
         })
         .select()
         .single()
@@ -221,13 +243,13 @@ function App() {
         exercise_name: ex.name,
         exercise_type: ex.type,
         equipment: ex.equipment,
-        weight: ex.sets?.[0]?.weight || ex.weight || '',
-        weight_1: ex.sets?.[0]?.weight || '',
-        weight_2: ex.sets?.[1]?.weight || '',
-        weight_3: ex.sets?.[2]?.weight || '',
-        weight_4: ex.sets?.[3]?.weight || '',
-        weight_5: ex.sets?.[4]?.weight || '',
-        weight_6: ex.sets?.[5]?.weight || '',
+        weight: formatWeight(ex.sets?.[0]?.weight, ex.weightUnit),
+        weight_1: formatWeight(ex.sets?.[0]?.weight, ex.weightUnit),
+        weight_2: formatWeight(ex.sets?.[1]?.weight, ex.weightUnit),
+        weight_3: formatWeight(ex.sets?.[2]?.weight, ex.weightUnit),
+        weight_4: formatWeight(ex.sets?.[3]?.weight, ex.weightUnit),
+        weight_5: formatWeight(ex.sets?.[4]?.weight, ex.weightUnit),
+        weight_6: formatWeight(ex.sets?.[5]?.weight, ex.weightUnit),
         set_1: ex.sets?.[0]?.reps || '',
         set_2: ex.sets?.[1]?.reps || '',
         set_3: ex.sets?.[2]?.reps || '',
@@ -236,7 +258,7 @@ function App() {
         set_6: ex.sets?.[5]?.reps || '',
         target_total: ex.targetTotal || null,
         is_extra: ex.isExtra || false,
-        difficulty: ex.difficulty
+        difficulty: [ex.difficulty, ex.exerciseNotes ? `Notes: ${ex.exerciseNotes}` : ''].filter(Boolean).join(' | ')
       }))
 
       const { error: sErr } = await supabase.from('workout_sets').insert(rows)
@@ -281,7 +303,7 @@ function App() {
     <div>
       <main className="app">
         {tab === 'home' && <Dashboard workouts={workouts} body={body} bests={bests} cloudStatus={cloudStatus} legPressChart={legPressChart} currentWorkout={currentWorkout} />}
-        {tab === 'workout' && <Workout onSave={saveWorkout} bests={bests} currentWorkout={currentWorkout} workoutDraft={workoutDraft} setWorkoutDraft={setWorkoutDraft} resetWorkoutDraft={resetWorkoutDraft} />}
+        {tab === 'workout' && <Workout onSave={saveWorkout} bests={bests} previousByExercise={previousByExercise} currentWorkout={currentWorkout} workoutDraft={workoutDraft} setWorkoutDraft={setWorkoutDraft} resetWorkoutDraft={resetWorkoutDraft} />}
         {tab === 'history' && <History workouts={workouts} />}
         {tab === 'progress' && <Progress bests={bests} body={body} onSaveBody={saveBody} legPressChart={legPressChart} />}
         {tab === 'settings' && <Settings cloudStatus={cloudStatus} reload={loadCloudData} />}
@@ -357,9 +379,10 @@ function Dashboard({ workouts, body, bests, cloudStatus, legPressChart, currentW
   )
 }
 
-function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft }) {
+function Workout({ onSave, bests, previousByExercise, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft }) {
   const items = workoutDraft?.exercises || []
   const notes = workoutDraft?.notes || ''
+  const rating = workoutDraft?.rating || ''
 
   function updateDraft(updater) {
     setWorkoutDraft(prev => {
@@ -383,7 +406,7 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
       exercises: draft.exercises.map((item, i) => {
         if (i !== exerciseIndex) return item
         const sets = [...item.sets]
-        sets[setIndex] = { ...sets[setIndex], [key]: value }
+        sets[setIndex] = { ...sets[setIndex], [key]: key === 'weight' ? cleanWeight(value) : value }
         return { ...item, sets }
       })
     }))
@@ -398,7 +421,7 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
 
         const previousSet = item.sets[item.sets.length - 1]
         const nextSet = {
-          weight: item.equipment === 'Bodyweight' ? '' : (previousSet?.weight || item.defaultWeight || item.weight || ''),
+          weight: item.equipment === 'Bodyweight' ? '' : (previousSet?.weight || cleanWeight(item.defaultWeight) || cleanWeight(item.weight) || ''),
           reps: ''
         }
 
@@ -428,6 +451,7 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
           type: 'strength',
           equipment: 'Machine',
           equipmentOptions,
+          weightUnit: 'kg',
           target: 'Optional extra',
           reps: '8–12',
           defaultWeight: '',
@@ -436,6 +460,7 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
           isCollapsed: false,
           isComplete: false,
           difficulty: '',
+          exerciseNotes: '',
           sets: [
             { weight: '', reps: '' },
             { weight: '', reps: '' }
@@ -473,10 +498,11 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
   }
 
   function updateNotes(value) {
-    updateDraft(draft => ({
-      ...draft,
-      notes: value
-    }))
+    updateDraft(draft => ({ ...draft, notes: value }))
+  }
+
+  function updateRating(value) {
+    updateDraft(draft => ({ ...draft, rating: value }))
   }
 
   function handleReset() {
@@ -506,6 +532,7 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
             index={index}
             exercise={ex}
             best={bests[ex.name]}
+            previous={previousByExercise[ex.name]}
             update={update}
             updateSet={updateSet}
             addSet={addSet}
@@ -522,6 +549,20 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
       </button>
 
       <section className="card">
+        <label>How did it feel?</label>
+        <div className="ratingGrid">
+          {['Excellent', 'Good', 'Average', 'Tough', 'Very tough'].map(option => (
+            <button
+              key={option}
+              type="button"
+              className={rating === option ? 'ratingBtn active' : 'ratingBtn'}
+              onClick={() => updateRating(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
         <label>Session notes</label>
         <textarea
           value={notes}
@@ -529,7 +570,7 @@ function Workout({ onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft,
           placeholder="Energy, difficulty, anything awkward or too easy..."
         />
 
-        <button className="btn" onClick={() => onSave({ exercises: items, notes })}>
+        <button className="btn" onClick={() => onSave({ exercises: items, notes, rating })}>
           <Check size={18}/> Finish + save to cloud
         </button>
 
@@ -545,20 +586,22 @@ function buildWorkoutItems(workout) {
   return workout.exercises.map(ex => ({
     ...ex,
     equipment: ex.equipment || '',
+    weightUnit: 'kg',
     isCollapsed: false,
     isComplete: false,
     difficulty: '',
+    exerciseNotes: '',
     sets: Array.from(
       { length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) },
       () => ({
-        weight: ex.equipment === 'Bodyweight' ? '' : (ex.defaultWeight || ''),
+        weight: ex.equipment === 'Bodyweight' ? '' : cleanWeight(ex.defaultWeight || ''),
         reps: ''
       })
     )
   }))
 }
 
-function ExerciseCard({ index, exercise, best, update, updateSet, addSet, removeSet, removeExercise, toggleComplete, toggleCollapsed }) {
+function ExerciseCard({ index, exercise, best, previous, update, updateSet, addSet, removeSet, removeExercise, toggleComplete, toggleCollapsed }) {
   const total = exercise.sets.reduce((sum, set) => sum + (numberFrom(set.reps) || 0), 0)
   const isTargetTotal = exercise.type === 'target-total'
   const isBodyweight = exercise.equipment === 'Bodyweight'
@@ -598,9 +641,7 @@ function ExerciseCard({ index, exercise, best, update, updateSet, addSet, remove
             <p className="target">Target: {exercise.target} · {exercise.reps}</p>
           )}
 
-          <p className="muted">
-            Previous best: <strong>{best?.display || 'Not logged yet'}</strong>
-          </p>
+          <PreviousExercise previous={previous} best={best} />
 
           {isTargetTotal && (
             <div className="totalBox">
@@ -616,6 +657,15 @@ function ExerciseCard({ index, exercise, best, update, updateSet, addSet, remove
               options={exercise.equipmentOptions || equipmentOptions}
               onChange={v => update(index, 'equipment', v)}
             />
+
+            {!isBodyweight && (
+              <SelectField
+                label="Weight unit"
+                value={exercise.weightUnit || 'kg'}
+                options={weightUnitOptions}
+                onChange={v => update(index, 'weightUnit', v)}
+              />
+            )}
 
             <Field label="Difficulty" value={exercise.difficulty} onChange={v => update(index, 'difficulty', v)} />
           </div>
@@ -635,7 +685,8 @@ function ExerciseCard({ index, exercise, best, update, updateSet, addSet, remove
                   <input
                     value={set.weight}
                     onChange={e => updateSet(index, setIndex, 'weight', e.target.value)}
-                    placeholder="kg"
+                    placeholder={exercise.weightUnit || 'kg'}
+                    inputMode="decimal"
                   />
                 )}
 
@@ -654,6 +705,13 @@ function ExerciseCard({ index, exercise, best, update, updateSet, addSet, remove
             <button type="button" className="miniBtn" onClick={() => removeSet(index)}>Remove set</button>
           </div>
 
+          <label>Exercise notes</label>
+          <textarea
+            value={exercise.exerciseNotes || ''}
+            onChange={e => update(index, 'exerciseNotes', e.target.value)}
+            placeholder="Seat position, machine setting, anything to remember next time..."
+          />
+
           <button type="button" className="completeBtn" onClick={() => toggleComplete(index)}>
             <Check size={18}/> {exercise.isComplete ? 'Reopen exercise' : 'Mark exercise complete'}
           </button>
@@ -663,10 +721,35 @@ function ExerciseCard({ index, exercise, best, update, updateSet, addSet, remove
   )
 }
 
+function PreviousExercise({ previous, best }) {
+  if (!previous && !best) {
+    return <p className="muted">Previous: <strong>Not logged yet</strong></p>
+  }
+
+  const previousSummary = previous
+    ? formatHistoryExercise(previous)
+        .replace(`${previous.exercise_name}${previous.equipment ? ` (${previous.equipment})` : ''}:`, '')
+        .trim()
+    : 'Not logged yet'
+
+  return (
+    <div className="previousBox">
+      <div>
+        <span>Last time</span>
+        <strong>{previousSummary}</strong>
+      </div>
+      <div>
+        <span>Best</span>
+        <strong>{best?.display || 'Not logged yet'}</strong>
+      </div>
+    </div>
+  )
+}
+
 function summariseSets(exercise) {
   const sets = exercise.sets
     .filter(set => set.reps)
-    .map(set => set.weight ? `${set.weight} × ${set.reps}` : set.reps)
+    .map(set => set.weight ? `${formatWeight(set.weight, exercise.weightUnit)} × ${set.reps}` : set.reps)
 
   if (!sets.length) return ''
 
@@ -692,6 +775,7 @@ function History({ workouts }) {
           <p className="muted">
             {(w.exercises || []).map(formatHistoryExercise).join('\n')}
           </p>
+          {w.notes && <p className="muted">{w.notes}</p>}
         </section>
       ))}
     </>
