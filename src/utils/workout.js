@@ -1,8 +1,18 @@
 import { workoutTemplates } from '../seed'
 
 export const equipmentOptions = ['Machine', 'Dumbbells', 'Cable', 'Bodyweight']
+export const weightUnitOptions = ['kg', 'lb']
 export const workoutDraftKey = 'sj_workout_draft'
 export const today = () => new Date().toISOString().slice(0, 10)
+
+export function cleanWeight(value) {
+  return String(value || '').replace(/[^0-9.]/g, '')
+}
+
+export function formatWeight(value, unit = 'kg') {
+  const clean = cleanWeight(value)
+  return clean ? `${clean} ${unit}` : ''
+}
 
 export function numberFrom(value) {
   const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''))
@@ -37,9 +47,10 @@ export function buildWorkoutItems(workout) {
     isCollapsed: false,
     isComplete: false,
     difficulty: '',
+    weightUnit: ex.weightUnit || 'kg',
     sets: Array.from(
       { length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) },
-      () => ({ weight: ex.equipment === 'Bodyweight' ? '' : (ex.defaultWeight || ''), reps: '' })
+      () => ({ weight: ex.equipment === 'Bodyweight' ? '' : cleanWeight(ex.defaultWeight || ''), reps: '' })
     )
   }))
 }
@@ -51,7 +62,7 @@ export const createWorkoutDraft = workout => ({
 })
 
 export function summariseSets(exercise) {
-  const sets = exercise.sets.filter(s => s.reps).map(s => s.weight ? `${s.weight} × ${s.reps}` : s.reps)
+  const sets = exercise.sets.filter(s => s.reps).map(s => s.weight ? `${formatWeight(s.weight, exercise.weightUnit)} × ${s.reps}` : s.reps)
   if (!sets.length) return ''
   if (exercise.type === 'target-total') {
     const total = exercise.sets.reduce((sum, s) => sum + (numberFrom(s.reps) || 0), 0)

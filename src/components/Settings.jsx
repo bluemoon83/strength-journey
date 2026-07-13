@@ -9,6 +9,11 @@ export default function Settings({ cloudStatus, reload }) {
         <p className="status">{cloudStatus}</p>
         <button className="btn" onClick={reload}>Test / reload cloud</button>
       </section>
+      <section className="card subtle">
+        <h2>Strength Journey</h2>
+        <p className="status">v0.5.1 · Units restored</p>
+      </section>
+
       <section className="card">
         <h2>Coming next</h2>
         <p className="muted">

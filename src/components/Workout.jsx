@@ -1,7 +1,7 @@
 import React from 'react'
 import { Check, Plus } from 'lucide-react'
 import ExerciseCard from './ExerciseCard'
-import { createWorkoutDraft, equipmentOptions } from '../utils/workout'
+import { cleanWeight, createWorkoutDraft, equipmentOptions } from '../utils/workout'
 
 export default function Workout({
   onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft
@@ -26,7 +26,10 @@ export default function Workout({
       exercises: draft.exercises.map((item, i) => {
         if (i !== exerciseIndex) return item
         const sets = [...item.sets]
-        sets[setIndex] = { ...sets[setIndex], [key]: value }
+        sets[setIndex] = {
+          ...sets[setIndex],
+          [key]: key === 'weight' ? cleanWeight(value) : value
+        }
         return { ...item, sets }
       })
     }))
@@ -41,7 +44,9 @@ export default function Workout({
         return {
           ...item,
           sets: [...item.sets, {
-            weight: item.equipment === 'Bodyweight' ? '' : (previousSet?.weight || item.defaultWeight || item.weight || ''),
+            weight: item.equipment === 'Bodyweight'
+              ? ''
+              : (previousSet?.weight || cleanWeight(item.defaultWeight) || cleanWeight(item.weight) || ''),
             reps: ''
           }]
         }
@@ -67,6 +72,7 @@ export default function Workout({
         type: 'strength',
         equipment: 'Machine',
         equipmentOptions,
+        weightUnit: 'kg',
         target: 'Optional extra',
         reps: '8–12',
         defaultWeight: '',

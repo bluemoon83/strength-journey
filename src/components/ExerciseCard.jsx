@@ -1,7 +1,12 @@
 import React from 'react'
 import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { Field, SelectField } from './Ui'
-import { equipmentOptions, numberFrom, summariseSets } from '../utils/workout'
+import {
+  equipmentOptions,
+  numberFrom,
+  summariseSets,
+  weightUnitOptions
+} from '../utils/workout'
 
 export default function ExerciseCard({
   index, exercise, best, update, updateSet, addSet, removeSet,
@@ -60,6 +65,14 @@ export default function ExerciseCard({
               options={exercise.equipmentOptions || equipmentOptions}
               onChange={v => update(index, 'equipment', v)}
             />
+            {!isBodyweight && (
+              <SelectField
+                label="Weight unit"
+                value={exercise.weightUnit || 'kg'}
+                options={weightUnitOptions}
+                onChange={v => update(index, 'weightUnit', v)}
+              />
+            )}
             <Field label="Difficulty" value={exercise.difficulty} onChange={v => update(index, 'difficulty', v)} />
           </div>
 
@@ -77,7 +90,8 @@ export default function ExerciseCard({
                   <input
                     value={set.weight}
                     onChange={e => updateSet(index, setIndex, 'weight', e.target.value)}
-                    placeholder="kg"
+                    placeholder={exercise.weightUnit || 'kg'}
+                    inputMode="decimal"
                   />
                 )}
                 <input
