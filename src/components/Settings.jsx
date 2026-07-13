@@ -105,14 +105,14 @@ export default function Settings({
 
       <section className="card subtle">
         <h2>Strength Journey</h2>
-        <p className="status">v0.5.3 · Export Centre</p>
+        <p className="status">v0.6.0 · Coach Preview</p>
       </section>
 
       <section className="card">
         <h2>Coming next</h2>
         <p className="muted">
-          Redesigned History and Progress, followed by smarter
-          progression recommendations.
+          History and Progress redesign, followed by a full editable
+          machine-first exercise library.
         </p>
       </section>
     </>

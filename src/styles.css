@@ -884,3 +884,102 @@ select {
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* v0.6.0 - Coach Preview */
+
+.recoveryCard {
+  border-color: rgba(96, 165, 250, .24);
+}
+
+.recoveryOptions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.recoveryButton {
+  padding: 11px 6px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .72);
+  color: #fff;
+  font-weight: 800;
+}
+
+.recoveryButton.active {
+  border-color: rgba(96, 165, 250, .55);
+  background: rgba(96, 165, 250, .16);
+  color: #dbeafe;
+}
+
+.coachRecommendation {
+  margin: 12px 0;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: rgba(15, 23, 42, .72);
+}
+
+.coach-increase {
+  border-color: rgba(52, 211, 153, .38);
+  background: rgba(52, 211, 153, .1);
+}
+
+.coach-hold {
+  border-color: rgba(250, 204, 21, .32);
+  background: rgba(250, 204, 21, .08);
+}
+
+.coach-reduce {
+  border-color: rgba(251, 146, 60, .36);
+  background: rgba(251, 146, 60, .08);
+}
+
+.coachRecommendationHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.coachRecommendationHeader span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.coachTarget {
+  margin: 9px 0 5px;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.coachReason {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.exerciseGuide {
+  margin: 10px 0 14px;
+  padding: 12px;
+  border-radius: 15px;
+  background: rgba(148, 163, 184, .07);
+}
+
+.exerciseGuide p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 430px) {
+  .recoveryOptions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

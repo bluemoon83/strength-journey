@@ -2,7 +2,7 @@ export const profile = {
   name: 'Stephen',
   age: 43,
   gym: 'Thrive Gym, Rossendale',
-  goal: 'Get stronger and lose fat',
+  goal: 'Get stronger, build muscle and lose fat',
   startingWeightKg: 89,
   targetWeightKg: '84–86',
   targetWorkouts: 36
@@ -14,52 +14,53 @@ export const workoutTemplates = [
   {
     name: 'Lower Body & Push',
     subtitle: "Today's workout",
-    description: 'Leg power, chest press, shoulders and core.',
+    description: 'Machine-first leg, chest, shoulders and triceps session.',
     mainTarget: 'Build leg and pressing strength',
     exercises: [
-      { name: 'Leg Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: '72–77 kg', defaultWeight: '72 kg', reps: '8–10', sets: 3 },
-      { name: 'Chest Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: '37 kg', defaultWeight: '37 kg', reps: '8–10', sets: 3 },
-      { name: 'Cable Row', type: 'strength', equipment: 'Cable', equipmentOptions, target: '40 kg', defaultWeight: '40 kg', reps: '8–10', sets: 3 },
-      { name: 'Shoulder Press Machine', type: 'strength', equipment: 'Machine', equipmentOptions, target: '23 kg', defaultWeight: '23 kg', reps: '8–10', sets: 3 },
-      { name: 'Leg Curl', type: 'strength', equipment: 'Machine', equipmentOptions, target: '25–30 kg', defaultWeight: '25 kg', reps: '10–12', sets: 3 },
-      { name: 'Press-ups', type: 'target-total', equipment: 'Bodyweight', equipmentOptions, target: '40 total reps', targetTotal: 40, defaultWeight: 'Bodyweight', reps: 'total reps', startingSets: 3 },
-      { name: 'Plank', type: 'timed', equipment: 'Bodyweight', equipmentOptions, target: '35–40 seconds', defaultWeight: 'Bodyweight', reps: 'seconds', sets: 3 }
+      { name: 'Leg Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Progress from your previous workout', defaultWeight: '77 kg', reps: '8–10', sets: 3, cue: 'Keep your lower back against the pad and avoid locking your knees.', alternatives: ['Hack Squat Machine', 'FreeMotion Squat'] },
+      { name: 'Chest Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Controlled 8–10 reps', defaultWeight: '37 kg', reps: '8–10', sets: 3, cue: 'Keep your shoulder blades back and press without shrugging.', alternatives: ['FreeMotion Chest Press', 'Dumbbell Chest Press'] },
+      { name: 'Cable Row', type: 'strength', equipment: 'Cable', equipmentOptions, target: 'Controlled 8–10 reps', defaultWeight: '45 kg', reps: '8–10', sets: 3, cue: 'Lead with your elbows and pause briefly when the handles reach you.', alternatives: ['Chest-Supported Row', 'FreeMotion Row'] },
+      { name: 'Shoulder Press Machine', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Controlled 8–10 reps', defaultWeight: '27 kg', reps: '8–10', sets: 3, cue: 'Keep elbows slightly forward and avoid arching your lower back.', alternatives: ['FreeMotion Shoulder Press', 'Seated Dumbbell Press'] },
+      { name: 'Leg Curl', type: 'strength', equipment: 'Machine', equipmentOptions, target: '10–12 reps', defaultWeight: '41 kg', reps: '10–12', sets: 3, cue: 'Keep your hips down and control the return.', alternatives: ['Lying Leg Curl', 'FreeMotion Hamstring Curl'] },
+      { name: 'Cable Triceps Pushdown', type: 'strength', equipment: 'Cable', equipmentOptions, target: 'Find a comfortable starting weight', defaultWeight: '', reps: '10–12', sets: 3, cue: 'Keep your elbows pinned to your sides and move only the forearms.', alternatives: ['FreeMotion Triceps Extension', 'Dumbbell Overhead Extension'] },
+      { name: 'Press-ups', type: 'target-total', equipment: 'Bodyweight', equipmentOptions, target: '45 total reps', targetTotal: 45, defaultWeight: 'Bodyweight', reps: 'total reps', startingSets: 3, cue: 'Keep a straight line from shoulders to heels.', alternatives: ['Incline Press-ups', 'Chest Press Machine'] },
+      { name: 'Plank', type: 'timed', equipment: 'Bodyweight', equipmentOptions, target: '40–45 seconds', defaultWeight: 'Bodyweight', reps: 'seconds', sets: 3, cue: 'Brace as if preparing for a punch and keep your hips level.', alternatives: ['Pallof Press', 'Dead Bug'] }
     ]
   },
   {
     name: 'Upper Pull & Core',
     subtitle: "Today's workout",
-    description: 'Back, posture, leg extension and core.',
+    description: 'Back, legs, arms and core with machine and cable work.',
     mainTarget: 'Build back strength and core control',
     exercises: [
-      { name: 'Leg Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: '77–82 kg', defaultWeight: '77 kg', reps: '8–10', sets: 3 },
-      { name: 'Lat Pulldown', type: 'strength', equipment: 'Cable', equipmentOptions, target: '40 kg', defaultWeight: '40 kg', reps: '8–10', sets: 3 },
-      { name: 'Incline Chest Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: '12.5 kg', defaultWeight: '12.5 kg', reps: '8–10', sets: 3 },
-      { name: 'Lateral Raise Machine', type: 'strength', equipment: 'Machine', equipmentOptions, target: '23 kg', defaultWeight: '23 kg', reps: '10', sets: 3 },
-      { name: 'Leg Extension', type: 'strength', equipment: 'Machine', equipmentOptions, target: '45 kg', defaultWeight: '45 kg', reps: '8–10', sets: 3 },
-      { name: 'Cable Crunch', type: 'strength', equipment: 'Cable', equipmentOptions, target: '50 kg', defaultWeight: '50 kg', reps: '10–12', sets: 3 },
-      { name: 'Press-ups', type: 'target-total', equipment: 'Bodyweight', equipmentOptions, target: '40 total reps', targetTotal: 40, defaultWeight: 'Bodyweight', reps: 'total reps', startingSets: 3 },
-      { name: 'Plank', type: 'timed', equipment: 'Bodyweight', equipmentOptions, target: '35–40 seconds', defaultWeight: 'Bodyweight', reps: 'seconds', sets: 3 }
+      { name: 'Leg Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Progress from your previous workout', defaultWeight: '82 kg', reps: '8–10', sets: 3, cue: 'Keep your lower back against the pad and use a controlled depth.', alternatives: ['Hack Squat Machine', 'FreeMotion Squat'] },
+      { name: 'Lat Pulldown', type: 'strength', equipment: 'Cable', equipmentOptions, target: '8–10 reps', defaultWeight: '40 kg', reps: '8–10', sets: 3, cue: 'Pull your elbows towards your ribs rather than pulling with your hands.', alternatives: ['FreeMotion High Row', 'Assisted Pull-up'] },
+      { name: 'Incline Chest Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: '8–10 reps', defaultWeight: '12.5 kg', reps: '8–10', sets: 3, cue: 'Keep your shoulders down and use a smooth press.', alternatives: ['FreeMotion Incline Press', 'Incline Dumbbell Press'] },
+      { name: 'Lateral Raise Machine', type: 'strength', equipment: 'Machine', equipmentOptions, target: '10–12 reps', defaultWeight: '23 kg', reps: '10–12', sets: 3, cue: 'Lead with your elbows and stop around shoulder height.', alternatives: ['Cable Lateral Raise', 'Dumbbell Lateral Raise'] },
+      { name: 'Leg Extension', type: 'strength', equipment: 'Machine', equipmentOptions, target: '10–12 reps', defaultWeight: '45 kg', reps: '10–12', sets: 3, cue: 'Lift smoothly and avoid snapping your knees straight.', alternatives: ['FreeMotion Leg Extension', 'Step-ups'] },
+      { name: 'Cable Hammer Curl', type: 'strength', equipment: 'Cable', equipmentOptions, target: 'Find a comfortable starting weight', defaultWeight: '', reps: '10–12', sets: 3, cue: 'Keep elbows still and use a neutral thumbs-up grip.', alternatives: ['Dumbbell Hammer Curl', 'Biceps Curl Machine'] },
+      { name: 'Cable Crunch', type: 'strength', equipment: 'Cable', equipmentOptions, target: '10–12 reps', defaultWeight: '50 kg', reps: '10–12', sets: 3, cue: 'Curl your ribs towards your hips rather than pulling with your arms.', alternatives: ['Ab Crunch Machine', 'Dead Bug'] },
+      { name: 'Plank', type: 'timed', equipment: 'Bodyweight', equipmentOptions, target: '40 seconds', defaultWeight: 'Bodyweight', reps: 'seconds', sets: 3, cue: 'Brace your core and breathe normally.', alternatives: ['Pallof Press', 'Dead Bug'] }
     ]
   },
   {
     name: 'Full Body Strength',
     subtitle: "Today's workout",
-    description: 'Full body session with a heavier leg press focus.',
-    mainTarget: '82 kg Leg Press',
+    description: 'Full-body machine session with posterior-chain work.',
+    mainTarget: 'Balanced full-body progression',
     exercises: [
-      { name: 'Leg Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: '82 kg', defaultWeight: '82 kg', reps: '8–10', sets: 3 },
-      { name: 'Chest-Supported Row', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Find 8–10 hard reps', defaultWeight: '', reps: '8–10', sets: 3 },
-      { name: 'Pec Deck', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Controlled reps', defaultWeight: '', reps: '10', sets: 3 },
-      { name: 'Shoulder Press Machine', type: 'strength', equipment: 'Machine', equipmentOptions, target: '23 kg', defaultWeight: '23 kg', reps: '8–10', sets: 3 },
-      { name: 'Leg Curl', type: 'strength', equipment: 'Machine', equipmentOptions, target: '30 kg', defaultWeight: '30 kg', reps: '10–12', sets: 3 },
-      { name: 'Press-ups', type: 'target-total', equipment: 'Bodyweight', equipmentOptions, target: '40 total reps', targetTotal: 40, defaultWeight: 'Bodyweight', reps: 'total reps', startingSets: 3 },
-      { name: 'Plank', type: 'timed', equipment: 'Bodyweight', equipmentOptions, target: '35 / 35 / 35 sec', defaultWeight: 'Bodyweight', reps: 'seconds', sets: 3 }
+      { name: 'Leg Press', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Progress from your previous workout', defaultWeight: '86 kg', reps: '8–10', sets: 3, cue: 'Use a controlled depth and keep your knees tracking over your feet.', alternatives: ['Hack Squat Machine', 'FreeMotion Squat'] },
+      { name: 'Chest-Supported Row', type: 'strength', equipment: 'Machine', equipmentOptions, target: '8–10 hard reps', defaultWeight: '41 kg', reps: '8–10', sets: 3, cue: 'Keep your chest on the pad and squeeze your shoulder blades together.', alternatives: ['FreeMotion Row', 'Cable Row'] },
+      { name: 'Pec Deck', type: 'strength', equipment: 'Machine', equipmentOptions, target: 'Controlled 10–12 reps', defaultWeight: '27 kg', reps: '10–12', sets: 3, cue: 'Keep a soft bend in your elbows and avoid overstretching.', alternatives: ['FreeMotion Fly', 'Dumbbell Fly'] },
+      { name: 'FreeMotion Cable Pull-Through', type: 'strength', equipment: 'Cable', equipmentOptions, target: 'Learn the movement with a light load', defaultWeight: '', reps: '10–12', sets: 3, cue: 'Push your hips backwards, then squeeze your glutes to stand tall.', alternatives: ['Dumbbell Romanian Deadlift', 'Glute Drive Machine'] },
+      { name: 'Shoulder Press Machine', type: 'strength', equipment: 'Machine', equipmentOptions, target: '8–10 reps', defaultWeight: '27 kg', reps: '8–10', sets: 3, cue: 'Keep your ribs down and avoid locking your elbows.', alternatives: ['FreeMotion Shoulder Press', 'Seated Dumbbell Press'] },
+      { name: 'Leg Curl', type: 'strength', equipment: 'Machine', equipmentOptions, target: '10–12 reps', defaultWeight: '41 kg', reps: '10–12', sets: 3, cue: 'Control both directions and keep your hips still.', alternatives: ['Lying Leg Curl', 'FreeMotion Hamstring Curl'] },
+      { name: 'Press-ups', type: 'target-total', equipment: 'Bodyweight', equipmentOptions, target: '45 total reps', targetTotal: 45, defaultWeight: 'Bodyweight', reps: 'total reps', startingSets: 3, cue: 'Use as many sets as needed while keeping clean form.', alternatives: ['Incline Press-ups', 'Chest Press Machine'] },
+      { name: 'Plank', type: 'timed', equipment: 'Bodyweight', equipmentOptions, target: '40–45 seconds', defaultWeight: 'Bodyweight', reps: 'seconds', sets: 3, cue: 'Keep your hips level and squeeze your glutes.', alternatives: ['Pallof Press', 'Dead Bug'] }
     ]
   }
 ]
 
-// Fallback used before cloud data loads.
 export const nextWorkout = workoutTemplates[2]
 
 export const localSeedWorkouts = [

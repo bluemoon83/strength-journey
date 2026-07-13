@@ -1,6 +1,7 @@
 import React from 'react'
 import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { Field, SelectField } from './Ui'
+import { getCoachRecommendation } from '../utils/coachEngine'
 import {
   equipmentOptions,
   numberFrom,
@@ -9,7 +10,7 @@ import {
 } from '../utils/workout'
 
 export default function ExerciseCard({
-  index, exercise, best, previous, update, updateSet, addSet, removeSet,
+  index, exercise, best, previous, recovery, update, updateSet, addSet, removeSet,
   removeExercise, toggleComplete, toggleCollapsed
 }) {
   const total = exercise.sets.reduce((sum, set) => sum + (numberFrom(set.reps) || 0), 0)
@@ -17,6 +18,7 @@ export default function ExerciseCard({
   const isBodyweight = exercise.equipment === 'Bodyweight'
   const targetComplete = isTargetTotal && exercise.targetTotal && total >= exercise.targetTotal
   const summary = summariseSets(exercise)
+  const coach = getCoachRecommendation(exercise, previous, recovery)
 
   return (
     <div className={`workoutExerciseCard ${exercise.isComplete ? 'completedExercise' : ''}`}>
@@ -49,7 +51,19 @@ export default function ExerciseCard({
             ? <Field label="Exercise name" value={exercise.name} onChange={v => update(index, 'name', v)} />
             : <p className="target">Target: {exercise.target} · {exercise.reps}</p>}
 
+          <CoachCard recommendation={coach} />
           <WorkoutReplay previous={previous} best={best} />
+
+          {(exercise.cue || exercise.alternatives?.length) && (
+            <div className="exerciseGuide">
+              {exercise.cue && (
+                <p><strong>Technique cue:</strong> {exercise.cue}</p>
+              )}
+              {exercise.alternatives?.length > 0 && (
+                <p><strong>If busy:</strong> {exercise.alternatives.join(' · ')}</p>
+              )}
+            </div>
+          )}
 
           {isTargetTotal && (
             <div className="totalBox">
@@ -199,4 +213,18 @@ function formatReplayDate(dateValue) {
     day: 'numeric',
     month: 'short'
   })
+}
+
+
+function CoachCard({ recommendation }) {
+  return (
+    <div className={`coachRecommendation coach-${recommendation.tone}`}>
+      <div className="coachRecommendationHeader">
+        <span>Coach recommendation</span>
+        <strong>{recommendation.action}</strong>
+      </div>
+      <p className="coachTarget">{recommendation.target}</p>
+      <p className="coachReason">{recommendation.reason}</p>
+    </div>
+  )
 }

@@ -8,6 +8,7 @@ export default function Workout({
 }) {
   const items = workoutDraft?.exercises || []
   const notes = workoutDraft?.notes || ''
+  const recovery = workoutDraft?.recovery || 'Good'
 
   function updateDraft(updater) {
     setWorkoutDraft(prev => updater(prev || createWorkoutDraft(currentWorkout)))
@@ -108,6 +109,7 @@ export default function Workout({
   }))
 
   const updateNotes = value => updateDraft(draft => ({ ...draft, notes: value }))
+  const updateRecovery = value => updateDraft(draft => ({ ...draft, recovery: value }))
 
   function handleReset() {
     if (window.confirm('Clear your current workout entries and start again?')) resetWorkoutDraft()
@@ -123,6 +125,23 @@ export default function Workout({
         </div>
       </header>
 
+      <section className="card recoveryCard">
+        <h2>How are you feeling today?</h2>
+        <p className="muted">The coach will adjust its recommendations.</p>
+        <div className="recoveryOptions">
+          {['Great', 'Good', 'Average', 'Tired'].map(option => (
+            <button
+              key={option}
+              type="button"
+              className={recovery === option ? 'recoveryButton active' : 'recoveryButton'}
+              onClick={() => updateRecovery(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="card subtle">
         <h2>Workout draft saved</h2>
         <p className="muted">You can check History or Progress and come back without losing this workout.</p>
@@ -136,6 +155,7 @@ export default function Workout({
             exercise={exercise}
             best={bests[exercise.name]}
             previous={previousByExercise[exercise.name]}
+            recovery={recovery}
             update={update}
             updateSet={updateSet}
             addSet={addSet}
