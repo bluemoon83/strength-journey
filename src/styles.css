@@ -832,3 +832,55 @@ select {
 .replaySet strong {
   font-size: 14px;
 }
+
+/* v0.5.3 - Export Centre */
+
+.exportGrid {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.exportButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 17px;
+  background: rgba(15, 23, 42, .72);
+  color: #fff;
+  text-align: left;
+}
+
+.exportButton svg {
+  flex: 0 0 auto;
+  color: var(--green);
+}
+
+.exportButton span {
+  display: grid;
+  gap: 3px;
+}
+
+.exportButton strong {
+  font-size: 14px;
+}
+
+.exportButton small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.exportButtonPrimary {
+  border-color: rgba(52, 211, 153, .38);
+  background: rgba(52, 211, 153, .12);
+}
+
+.exportHelp {
+  margin: 14px 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}

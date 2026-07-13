@@ -307,7 +307,13 @@ export default function App() {
         )}
 
         {tab === 'settings' && (
-          <Settings cloudStatus={cloudStatus} reload={loadCloudData} />
+          <Settings
+            cloudStatus={cloudStatus}
+            reload={loadCloudData}
+            workouts={workouts}
+            body={body}
+            bests={bests}
+          />
         )}
       </main>
 
