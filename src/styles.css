@@ -767,3 +767,68 @@ select {
   border-color: rgba(52,211,153,.45);
   color: #bbf7d0;
 }
+
+/* v0.5.2 - Workout Replay */
+
+.replayBox {
+  margin: 12px 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(52, 211, 153, .2);
+  border-radius: 18px;
+  background: rgba(52, 211, 153, .06);
+}
+
+.replayHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 11px;
+}
+
+.replayHeading small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.replayBest {
+  text-align: right;
+}
+
+.replayBest strong {
+  display: block;
+  margin-top: 3px;
+  color: #bbf7d0;
+}
+
+.replayLabel {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.replaySets {
+  display: grid;
+  gap: 7px;
+}
+
+.replaySet {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 11px;
+  border-radius: 13px;
+  background: rgba(15, 23, 42, .7);
+}
+
+.replaySet span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.replaySet strong {
+  font-size: 14px;
+}

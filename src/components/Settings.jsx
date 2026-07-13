@@ -11,14 +11,14 @@ export default function Settings({ cloudStatus, reload }) {
       </section>
       <section className="card subtle">
         <h2>Strength Journey</h2>
-        <p className="status">v0.5.1 · Units restored</p>
+        <p className="status">v0.5.2 · Workout Replay</p>
       </section>
 
       <section className="card">
         <h2>Coming next</h2>
         <p className="muted">
-          Previous workout comparison, rest timer, exercise videos,
-          press-up challenge, and smarter progression recommendations.
+          Export centre, redesigned History and Progress,
+          rest timer, and smarter progression recommendations.
         </p>
       </section>
     </>

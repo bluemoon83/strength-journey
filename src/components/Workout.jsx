@@ -4,7 +4,7 @@ import ExerciseCard from './ExerciseCard'
 import { cleanWeight, createWorkoutDraft, equipmentOptions } from '../utils/workout'
 
 export default function Workout({
-  onSave, bests, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft
+  onSave, bests, previousByExercise, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft
 }) {
   const items = workoutDraft?.exercises || []
   const notes = workoutDraft?.notes || ''
@@ -135,6 +135,7 @@ export default function Workout({
             index={index}
             exercise={exercise}
             best={bests[exercise.name]}
+            previous={previousByExercise[exercise.name]}
             update={update}
             updateSet={updateSet}
             addSet={addSet}

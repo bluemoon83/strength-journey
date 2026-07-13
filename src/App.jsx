@@ -161,6 +161,25 @@ export default function App() {
     return output
   }, [workouts])
 
+  const previousByExercise = useMemo(() => {
+    const output = {}
+
+    for (const workout of [...workouts].reverse()) {
+      for (const exercise of workout.exercises || []) {
+        const name = exercise.exercise_name
+        if (!name || output[name]) continue
+
+        output[name] = {
+          ...exercise,
+          workoutDate: workout.date,
+          workoutName: workout.name
+        }
+      }
+    }
+
+    return output
+  }, [workouts])
+
   const legPressChart = workouts
     .map(workout => {
       const legPress = (workout.exercises || []).find(
@@ -268,6 +287,7 @@ export default function App() {
           <Workout
             onSave={saveWorkout}
             bests={bests}
+            previousByExercise={previousByExercise}
             currentWorkout={currentWorkout}
             workoutDraft={workoutDraft}
             setWorkoutDraft={setWorkoutDraft}

@@ -9,7 +9,7 @@ import {
 } from '../utils/workout'
 
 export default function ExerciseCard({
-  index, exercise, best, update, updateSet, addSet, removeSet,
+  index, exercise, best, previous, update, updateSet, addSet, removeSet,
   removeExercise, toggleComplete, toggleCollapsed
 }) {
   const total = exercise.sets.reduce((sum, set) => sum + (numberFrom(set.reps) || 0), 0)
@@ -49,7 +49,7 @@ export default function ExerciseCard({
             ? <Field label="Exercise name" value={exercise.name} onChange={v => update(index, 'name', v)} />
             : <p className="target">Target: {exercise.target} · {exercise.reps}</p>}
 
-          <p className="muted">Previous best: <strong>{best?.display || 'Not logged yet'}</strong></p>
+          <WorkoutReplay previous={previous} best={best} />
 
           {isTargetTotal && (
             <div className="totalBox">
@@ -116,4 +116,87 @@ export default function ExerciseCard({
       )}
     </div>
   )
+}
+
+
+function WorkoutReplay({ previous, best }) {
+  const previousSets = getPreviousSets(previous)
+
+  if (!previousSets.length && !best) {
+    return (
+      <div className="replayBox">
+        <span className="replayLabel">Workout replay</span>
+        <p className="muted">No previous result logged for this exercise.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="replayBox">
+      <div className="replayHeading">
+        <div>
+          <span className="replayLabel">Last workout</span>
+          {previous?.workoutDate && (
+            <small>{formatReplayDate(previous.workoutDate)}</small>
+          )}
+        </div>
+
+        <div className="replayBest">
+          <span className="replayLabel">Best</span>
+          <strong>{best?.display || '—'}</strong>
+        </div>
+      </div>
+
+      {previousSets.length > 0 && (
+        <div className="replaySets">
+          {previousSets.map((set, index) => (
+            <div className="replaySet" key={index}>
+              <span>Set {index + 1}</span>
+              <strong>{set}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function getPreviousSets(previous) {
+  if (!previous) return []
+
+  const weights = [
+    previous.weight_1,
+    previous.weight_2,
+    previous.weight_3,
+    previous.weight_4,
+    previous.weight_5,
+    previous.weight_6
+  ]
+
+  const reps = [
+    previous.set_1,
+    previous.set_2,
+    previous.set_3,
+    previous.set_4,
+    previous.set_5,
+    previous.set_6
+  ]
+
+  return reps
+    .map((rep, index) => {
+      if (!rep) return null
+      const weight = weights[index] || previous.weight
+      return weight ? `${weight} × ${rep}` : `${rep}`
+    })
+    .filter(Boolean)
+}
+
+function formatReplayDate(dateValue) {
+  const date = new Date(`${dateValue}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return dateValue
+
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short'
+  })
 }
