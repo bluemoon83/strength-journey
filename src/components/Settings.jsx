@@ -2,7 +2,6 @@ import React from 'react'
 import {
   Database,
   Download,
-  FileJson,
   FileSpreadsheet,
   Sparkles
 } from 'lucide-react'
@@ -44,56 +43,24 @@ export default function Settings({
         </div>
 
         <div className="exportGrid">
-          <button
-            className="exportButton"
-            type="button"
-            onClick={() => downloadWorkoutsCsv(workouts)}
-          >
+          <button className="exportButton" type="button" onClick={() => downloadWorkoutsCsv(workouts)}>
             <FileSpreadsheet size={20} />
-            <span>
-              <strong>Workouts CSV</strong>
-              <small>One row per set</small>
-            </span>
+            <span><strong>Workouts CSV</strong><small>One row per set</small></span>
           </button>
 
-          <button
-            className="exportButton"
-            type="button"
-            onClick={() => downloadBodyCsv(body)}
-          >
+          <button className="exportButton" type="button" onClick={() => downloadBodyCsv(body)}>
             <FileSpreadsheet size={20} />
-            <span>
-              <strong>Body CSV</strong>
-              <small>Weight and waist history</small>
-            </span>
+            <span><strong>Body CSV</strong><small>Weight and waist history</small></span>
           </button>
 
-          <button
-            className="exportButton"
-            type="button"
-            onClick={() =>
-              downloadJsonBackup({ workouts, body, bests })
-            }
-          >
+          <button className="exportButton" type="button" onClick={() => downloadJsonBackup({ workouts, body, bests })}>
             <Database size={20} />
-            <span>
-              <strong>Full backup</strong>
-              <small>Complete JSON copy</small>
-            </span>
+            <span><strong>Full backup</strong><small>Complete JSON copy</small></span>
           </button>
 
-          <button
-            className="exportButton exportButtonPrimary"
-            type="button"
-            onClick={() =>
-              downloadAiReviewPack({ workouts, body, bests })
-            }
-          >
+          <button className="exportButton exportButtonPrimary" type="button" onClick={() => downloadAiReviewPack({ workouts, body, bests })}>
             <Sparkles size={20} />
-            <span>
-              <strong>AI Review Pack</strong>
-              <small>Upload this file to ChatGPT</small>
-            </span>
+            <span><strong>AI Review Pack</strong><small>Upload this file to ChatGPT</small></span>
           </button>
         </div>
 
@@ -105,14 +72,14 @@ export default function Settings({
 
       <section className="card subtle">
         <h2>Strength Journey</h2>
-        <p className="status">v0.6.0 · Coach Preview</p>
+        <p className="status">v0.6.1 · Machine Coach</p>
       </section>
 
       <section className="card">
         <h2>Coming next</h2>
         <p className="muted">
-          History and Progress redesign, followed by a full editable
-          machine-first exercise library.
+          Achievements, weekly workout summaries and further History
+          and Progress improvements.
         </p>
       </section>
     </>
