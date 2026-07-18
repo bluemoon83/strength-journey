@@ -1,0 +1,164 @@
+/* Strength Journey v0.6.1 - Machine Coach */
+
+.recoveryButton {
+  display: grid;
+  place-items: center;
+  gap: 3px;
+}
+
+.recoveryButton span {
+  font-size: 20px;
+}
+
+.muscleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin: 12px 0;
+}
+
+.muscleGrid > div,
+.techniqueCard {
+  border: 1px solid rgba(148, 163, 184, .14);
+  background: rgba(148, 163, 184, .06);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.muscleGrid strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.guideLabel {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.techniqueCard p {
+  margin: 6px 0 0;
+  color: #dbeafe;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.machineBusy {
+  margin: 12px 0 15px;
+}
+
+.busyButton,
+.restoreButton {
+  width: 100%;
+  border: 1px solid rgba(96, 165, 250, .28);
+  background: rgba(96, 165, 250, .09);
+  color: #dbeafe;
+  border-radius: 15px;
+  padding: 11px 12px;
+  font-weight: 850;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.restoreButton {
+  margin-top: 8px;
+  border-color: rgba(52, 211, 153, .3);
+  background: rgba(52, 211, 153, .08);
+  color: #bbf7d0;
+}
+
+.swapOptions {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, .82);
+  border: 1px solid rgba(148, 163, 184, .16);
+}
+
+.swapOptions p {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.swapOptions button {
+  border: 1px solid rgba(148, 163, 184, .16);
+  background: rgba(148, 163, 184, .07);
+  color: #fff;
+  border-radius: 13px;
+  padding: 10px;
+  text-align: left;
+  font-weight: 750;
+}
+
+.swapPill {
+  display: inline-block;
+  margin: 2px 0 4px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, .13);
+  color: #bfdbfe;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.difficultyPicker {
+  margin: 14px 0;
+}
+
+.difficultyOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.difficultyOptions button {
+  border: 1px solid rgba(148, 163, 184, .17);
+  background: rgba(15, 23, 42, .7);
+  color: #cbd5e1;
+  border-radius: 13px;
+  padding: 10px 6px;
+  font-weight: 750;
+}
+
+.difficultyOptions button.active {
+  border-color: rgba(52, 211, 153, .46);
+  background: rgba(52, 211, 153, .12);
+  color: #d1fae5;
+}
+
+.confidence {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(148, 163, 184, .12);
+  margin-top: 10px;
+  padding-top: 9px;
+  font-size: 11px;
+}
+
+.confidence span {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.confidence strong {
+  color: #fbbf24;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 430px) {
+  .muscleGrid {
+    grid-template-columns: 1fr;
+  }
+}

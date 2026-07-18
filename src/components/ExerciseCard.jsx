@@ -1,24 +1,35 @@
-import React from 'react'
-import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import React, { useState } from 'react'
+import { Check, ChevronDown, ChevronUp, Plus, RefreshCw, Trash2, Wrench } from 'lucide-react'
 import { Field, SelectField } from './Ui'
 import { getCoachRecommendation } from '../utils/coachEngine'
+import { exerciseDetails } from '../utils/exerciseLibrary'
 import {
   equipmentOptions,
   numberFrom,
   summariseSets,
   weightUnitOptions
 } from '../utils/workout'
+import '../machineCoach.css'
+
+const difficultyOptions = [
+  ['Easy', '😀 Easy'],
+  ['Good', '🙂 Good'],
+  ['Challenging', '🥵 Challenging'],
+  ['Failure', '💀 Failure']
+]
 
 export default function ExerciseCard({
   index, exercise, best, previous, recovery, update, updateSet, addSet, removeSet,
-  removeExercise, toggleComplete, toggleCollapsed
+  removeExercise, replaceExercise, restoreExercise, toggleComplete, toggleCollapsed
 }) {
+  const [showSwaps, setShowSwaps] = useState(false)
   const total = exercise.sets.reduce((sum, set) => sum + (numberFrom(set.reps) || 0), 0)
   const isTargetTotal = exercise.type === 'target-total'
   const isBodyweight = exercise.equipment === 'Bodyweight'
   const targetComplete = isTargetTotal && exercise.targetTotal && total >= exercise.targetTotal
   const summary = summariseSets(exercise)
   const coach = getCoachRecommendation(exercise, previous, recovery)
+  const details = exerciseDetails(exercise)
 
   return (
     <div className={`workoutExerciseCard ${exercise.isComplete ? 'completedExercise' : ''}`}>
@@ -31,6 +42,7 @@ export default function ExerciseCard({
             {exercise.isExtra
               ? <span className="extraTitle">Extra exercise</span>
               : <h3>{index + 1}. {exercise.name}</h3>}
+            {exercise.isSwap && <span className="swapPill">Substitution</span>}
             <span className="collapsedSummary">{summary || exercise.target}</span>
           </span>
         </button>
@@ -54,13 +66,54 @@ export default function ExerciseCard({
           <CoachCard recommendation={coach} />
           <WorkoutReplay previous={previous} best={best} />
 
-          {(exercise.cue || exercise.alternatives?.length) && (
-            <div className="exerciseGuide">
-              {exercise.cue && (
-                <p><strong>Technique cue:</strong> {exercise.cue}</p>
+          <div className="muscleGrid">
+            <div>
+              <span className="guideLabel">Primary</span>
+              <strong>{details.primaryMuscles.join(' · ') || 'Not set'}</strong>
+            </div>
+            {details.secondaryMuscles.length > 0 && (
+              <div>
+                <span className="guideLabel">Also works</span>
+                <strong>{details.secondaryMuscles.join(' · ')}</strong>
+              </div>
+            )}
+          </div>
+
+          {details.cue && (
+            <div className="techniqueCard">
+              <span className="guideLabel">Technique</span>
+              <p>{details.cue}</p>
+            </div>
+          )}
+
+          {details.alternatives.length > 0 && (
+            <div className="machineBusy">
+              <button className="busyButton" type="button" onClick={() => setShowSwaps(value => !value)}>
+                <Wrench size={17}/> {showSwaps ? 'Hide alternatives' : 'Machine busy?'}
+              </button>
+
+              {showSwaps && (
+                <div className="swapOptions">
+                  <p>Choose an alternative for today:</p>
+                  {details.alternatives.map(name => (
+                    <button
+                      type="button"
+                      key={name}
+                      onClick={() => {
+                        replaceExercise(index, name)
+                        setShowSwaps(false)
+                      }}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
               )}
-              {exercise.alternatives?.length > 0 && (
-                <p><strong>If busy:</strong> {exercise.alternatives.join(' · ')}</p>
+
+              {exercise.isSwap && exercise.originalName && (
+                <button className="restoreButton" type="button" onClick={() => restoreExercise(index)}>
+                  <RefreshCw size={15}/> Restore {exercise.originalName}
+                </button>
               )}
             </div>
           )}
@@ -87,7 +140,22 @@ export default function ExerciseCard({
                 onChange={v => update(index, 'weightUnit', v)}
               />
             )}
-            <Field label="Difficulty" value={exercise.difficulty} onChange={v => update(index, 'difficulty', v)} />
+          </div>
+
+          <div className="difficultyPicker">
+            <label>How did it feel?</label>
+            <div className="difficultyOptions">
+              {difficultyOptions.map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  className={exercise.difficulty === value ? 'active' : ''}
+                  onClick={() => update(index, 'difficulty', exercise.difficulty === value ? '' : value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="setRows">
@@ -132,7 +200,6 @@ export default function ExerciseCard({
   )
 }
 
-
 function WorkoutReplay({ previous, best }) {
   const previousSets = getPreviousSets(previous)
 
@@ -150,11 +217,8 @@ function WorkoutReplay({ previous, best }) {
       <div className="replayHeading">
         <div>
           <span className="replayLabel">Last workout</span>
-          {previous?.workoutDate && (
-            <small>{formatReplayDate(previous.workoutDate)}</small>
-          )}
+          {previous?.workoutDate && <small>{formatReplayDate(previous.workoutDate)}</small>}
         </div>
-
         <div className="replayBest">
           <span className="replayLabel">Best</span>
           <strong>{best?.display || '—'}</strong>
@@ -177,24 +241,8 @@ function WorkoutReplay({ previous, best }) {
 
 function getPreviousSets(previous) {
   if (!previous) return []
-
-  const weights = [
-    previous.weight_1,
-    previous.weight_2,
-    previous.weight_3,
-    previous.weight_4,
-    previous.weight_5,
-    previous.weight_6
-  ]
-
-  const reps = [
-    previous.set_1,
-    previous.set_2,
-    previous.set_3,
-    previous.set_4,
-    previous.set_5,
-    previous.set_6
-  ]
+  const weights = [1, 2, 3, 4, 5, 6].map(index => previous[`weight_${index}`])
+  const reps = [1, 2, 3, 4, 5, 6].map(index => previous[`set_${index}`])
 
   return reps
     .map((rep, index) => {
@@ -208,13 +256,8 @@ function getPreviousSets(previous) {
 function formatReplayDate(dateValue) {
   const date = new Date(`${dateValue}T12:00:00`)
   if (Number.isNaN(date.getTime())) return dateValue
-
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short'
-  })
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
-
 
 function CoachCard({ recommendation }) {
   return (
@@ -225,6 +268,10 @@ function CoachCard({ recommendation }) {
       </div>
       <p className="coachTarget">{recommendation.target}</p>
       <p className="coachReason">{recommendation.reason}</p>
+      <div className="confidence">
+        <span>Confidence</span>
+        <strong>{'★'.repeat(recommendation.confidence || 3)}{'☆'.repeat(5 - (recommendation.confidence || 3))}</strong>
+      </div>
     </div>
   )
 }

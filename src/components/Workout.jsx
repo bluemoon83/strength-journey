@@ -2,6 +2,7 @@ import React from 'react'
 import { Check, Plus } from 'lucide-react'
 import ExerciseCard from './ExerciseCard'
 import { cleanWeight, createWorkoutDraft, equipmentOptions } from '../utils/workout'
+import { swapExercise } from '../utils/exerciseLibrary'
 
 export default function Workout({
   onSave, bests, previousByExercise, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft
@@ -87,6 +88,26 @@ export default function Workout({
     }))
   }
 
+  function replaceExercise(index, replacementName) {
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) =>
+        i === index ? swapExercise(item, replacementName) : item
+      )
+    }))
+  }
+
+  function restoreExercise(index) {
+    updateDraft(draft => ({
+      ...draft,
+      exercises: draft.exercises.map((item, i) =>
+        i === index && item.originalName
+          ? swapExercise({ ...item, originalName: null }, item.originalName)
+          : item
+      )
+    }))
+  }
+
   const removeExercise = index => updateDraft(draft => ({
     ...draft,
     exercises: draft.exercises.filter((_, i) => i !== index)
@@ -105,7 +126,9 @@ export default function Workout({
 
   const toggleCollapsed = index => updateDraft(draft => ({
     ...draft,
-    exercises: draft.exercises.map((item, i) => i === index ? { ...item, isCollapsed: !item.isCollapsed } : item)
+    exercises: draft.exercises.map((item, i) =>
+      i === index ? { ...item, isCollapsed: !item.isCollapsed } : item
+    )
   }))
 
   const updateNotes = value => updateDraft(draft => ({ ...draft, notes: value }))
@@ -115,13 +138,20 @@ export default function Workout({
     if (window.confirm('Clear your current workout entries and start again?')) resetWorkoutDraft()
   }
 
+  const recoveryOptions = [
+    ['Great', '😀'],
+    ['Good', '🙂'],
+    ['Average', '😐'],
+    ['Tired', '😫']
+  ]
+
   return (
     <>
       <header className="workoutHeader">
         <div>
           <div className="eyebrow">{currentWorkout.subtitle}</div>
           <h1>{currentWorkout.name}</h1>
-          <p className="muted">{items.length} exercises · 45–60 minutes</p>
+          <p className="muted">{items.length} exercises · 45–75 minutes</p>
         </div>
       </header>
 
@@ -129,22 +159,17 @@ export default function Workout({
         <h2>How are you feeling today?</h2>
         <p className="muted">The coach will adjust its recommendations.</p>
         <div className="recoveryOptions">
-          {['Great', 'Good', 'Average', 'Tired'].map(option => (
+          {recoveryOptions.map(([option, icon]) => (
             <button
               key={option}
               type="button"
               className={recovery === option ? 'recoveryButton active' : 'recoveryButton'}
               onClick={() => updateRecovery(option)}
             >
-              {option}
+              <span>{icon}</span>{option}
             </button>
           ))}
         </div>
-      </section>
-
-      <section className="card subtle">
-        <h2>Workout draft saved</h2>
-        <p className="muted">You can check History or Progress and come back without losing this workout.</p>
       </section>
 
       <section className="workoutList">
@@ -161,6 +186,8 @@ export default function Workout({
             addSet={addSet}
             removeSet={removeSet}
             removeExercise={removeExercise}
+            replaceExercise={replaceExercise}
+            restoreExercise={restoreExercise}
             toggleComplete={toggleComplete}
             toggleCollapsed={toggleCollapsed}
           />
