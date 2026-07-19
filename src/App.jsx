@@ -180,18 +180,41 @@ export default function App() {
     return output
   }, [workouts])
 
-  const legPressChart = workouts
-    .map(workout => {
-      const legPress = (workout.exercises || []).find(
-        exercise => exercise.exercise_name === 'Leg Press'
-      )
-      if (!legPress) return null
-      const firstWeight = legPress.weight_1 || legPress.weight
-      return firstWeight
-        ? { date: (workout.date || '').slice(5), weight: numberFrom(firstWeight) }
-        : null
-    })
-    .filter(Boolean)
+  const exerciseProgress = useMemo(() => {
+    const output = {}
+
+    for (const workout of workouts) {
+      for (const exercise of workout.exercises || []) {
+        const name = exercise.exercise_name
+        if (!name) continue
+
+        const weights = [
+          exercise.weight_1, exercise.weight_2, exercise.weight_3,
+          exercise.weight_4, exercise.weight_5, exercise.weight_6,
+          exercise.weight
+        ]
+          .map(numberFrom)
+          .filter(value => Number.isFinite(value) && value > 0)
+
+        if (!weights.length) continue
+
+        if (!output[name]) output[name] = []
+        output[name].push({
+          date: formatChartDate(workout.date),
+          fullDate: workout.date,
+          weight: Math.max(...weights)
+        })
+      }
+    }
+
+    for (const name of Object.keys(output)) {
+      output[name].sort((a, b) => String(a.fullDate).localeCompare(String(b.fullDate)))
+    }
+
+    return output
+  }, [workouts])
+
+  const legPressChart = exerciseProgress['Leg Press'] || []
 
   async function saveWorkout(formData) {
     try {
@@ -302,7 +325,7 @@ export default function App() {
             bests={bests}
             body={body}
             onSaveBody={saveBody}
-            legPressChart={legPressChart}
+            exerciseProgress={exerciseProgress}
           />
         )}
 
@@ -336,4 +359,14 @@ export default function App() {
       </nav>
     </div>
   )
+}
+
+function formatChartDate(dateValue) {
+  if (!dateValue) return ''
+  const date = new Date(`${dateValue}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return dateValue
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short'
+  })
 }

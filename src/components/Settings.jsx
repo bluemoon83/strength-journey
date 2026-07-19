@@ -72,20 +72,13 @@ export default function Settings({
 
       <section className="card subtle">
         <h2>Strength Journey</h2>
-        <p className="status">v0.7.1 · Exercise Coach</p>
-      </section>
-
-      <section className="card">
-        <h2>Exercise Coach</h2>
-        <p className="muted">
-          Quick exercise demonstrations and instant demos for Machine Busy alternatives are now available during workouts.
-        </p>
+        <p className="status">v0.7.2 · All Exercise Progress</p>
       </section>
 
       <section className="card">
         <h2>Coming next</h2>
         <p className="muted">
-          Smarter progression recommendations, achievements, weekly workout summaries and further History and Progress improvements.
+          Estimated one-rep max, volume trends and weekly coaching summaries.
         </p>
       </section>
     </>
