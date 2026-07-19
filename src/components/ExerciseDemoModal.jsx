@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react'
-import { Play, X } from 'lucide-react'
+import { ExternalLink, Play, X } from 'lucide-react'
 
-function youtubeEmbedUrl(query) {
-  const encoded = encodeURIComponent(query)
-  return `https://www.youtube-nocookie.com/embed?listType=search&list=${encoded}&autoplay=1&rel=0`
+function youtubeSearchUrl(query) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
 }
 
 export default function ExerciseDemoModal({ exerciseName, demoQuery, onClose }) {
@@ -11,13 +10,17 @@ export default function ExerciseDemoModal({ exerciseName, demoQuery, onClose }) 
     const closeOnEscape = event => {
       if (event.key === 'Escape') onClose()
     }
+
     document.addEventListener('keydown', closeOnEscape)
     document.body.classList.add('demoModalOpen')
+
     return () => {
       document.removeEventListener('keydown', closeOnEscape)
       document.body.classList.remove('demoModalOpen')
     }
   }, [onClose])
+
+  const demoUrl = youtubeSearchUrl(demoQuery || `${exerciseName} exercise demonstration`)
 
   return (
     <div className="demoBackdrop" role="presentation" onMouseDown={onClose}>
@@ -38,16 +41,19 @@ export default function ExerciseDemoModal({ exerciseName, demoQuery, onClose }) 
           </button>
         </header>
 
-        <div className="demoVideo">
-          <iframe
-            src={youtubeEmbedUrl(demoQuery)}
-            title={`${exerciseName} quick demonstration`}
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="demoUnavailableCard">
+          <div className="demoUnavailableIcon"><Play size={34} fill="currentColor"/></div>
+          <h3>Open the exercise demonstration</h3>
+          <p>
+            YouTube no longer supports the search-based embedded player used in the previous release.
+            Open the results in YouTube to choose a clear demonstration.
+          </p>
+          <a className="demoExternalButton" href={demoUrl} target="_blank" rel="noreferrer">
+            <ExternalLink size={18}/> Open demo on YouTube
+          </a>
         </div>
 
-        <p className="demoHint">Watch the first clear demonstration, then close this window to return to your workout.</p>
+        <p className="demoHint">Your workout remains saved while the demonstration opens in a new tab.</p>
       </section>
     </div>
   )

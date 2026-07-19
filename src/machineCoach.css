@@ -211,3 +211,100 @@
   .demoBackdrop { padding: 0; align-items: end; }
   .demoModal { max-height: 92dvh; border-radius: 22px 22px 0 0; }
 }
+
+/* Add this block to the end of your existing src/machineCoach.css */
+
+.demoButton {
+  width: 100%;
+  margin: 5px 0 13px;
+  border: 1px solid rgba(52, 211, 153, .4);
+  background: rgba(52, 211, 153, .12);
+  color: #d1fae5;
+  border-radius: 15px;
+  padding: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.swapOptionRow { display: grid; grid-template-columns: 76px 1fr; gap: 7px; }
+.swapOptions .swapDemoButton, .swapOptions .swapChoiceButton { min-height: 50px; }
+.swapOptions .swapDemoButton {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  color: #bbf7d0; border-color: rgba(52, 211, 153, .3);
+  background: rgba(52, 211, 153, .08); text-align: center;
+}
+.swapOptions .swapChoiceButton { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.swapChoiceButton span { color: var(--muted); font-size: 11px; font-weight: 650; }
+.demoModalOpen { overflow: hidden; }
+.demoBackdrop {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
+  padding: 16px; background: rgba(2, 6, 23, .84); backdrop-filter: blur(7px);
+}
+.demoModal {
+  width: min(680px, 100%); max-height: calc(100dvh - 32px); overflow: auto;
+  border-radius: 22px; border: 1px solid rgba(148, 163, 184, .22);
+  background: #0f172a; box-shadow: 0 24px 80px rgba(0, 0, 0, .48);
+}
+.demoHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 18px 14px; }
+.demoHeader h2 { margin: 5px 0 0; }
+.demoEyebrow { display: flex; align-items: center; gap: 6px; color: #86efac; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.demoClose { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, .2); background: rgba(148, 163, 184, .08); color: #fff; }
+.demoVideo { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.demoVideo iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.demoHint { margin: 0; padding: 13px 18px 18px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+@media (max-width: 430px) {
+  .demoBackdrop { padding: 0; align-items: end; }
+  .demoModal { max-height: 92dvh; border-radius: 22px 22px 0 0; }
+}
+
+/* v0.7.1 - reliable external demo launcher */
+.demoUnavailableCard {
+  margin: 0 18px;
+  padding: 28px 20px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, .72);
+  text-align: center;
+}
+
+.demoUnavailableIcon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #86efac;
+  background: rgba(52, 211, 153, .12);
+  border: 1px solid rgba(52, 211, 153, .28);
+}
+
+.demoUnavailableCard h3 {
+  margin: 0 0 8px;
+}
+
+.demoUnavailableCard p {
+  margin: 0 auto 18px;
+  max-width: 520px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.demoExternalButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(52, 211, 153, .42);
+  background: rgba(52, 211, 153, .14);
+  color: #d1fae5;
+  font-weight: 900;
+  text-decoration: none;
+}
