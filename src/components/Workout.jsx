@@ -3,6 +3,7 @@ import { Check, Plus } from 'lucide-react'
 import ExerciseCard from './ExerciseCard'
 import { cleanWeight, createWorkoutDraft, equipmentOptions } from '../utils/workout'
 import { swapExercise } from '../utils/exerciseLibrary'
+import '../workoutFlow.css'
 
 export default function Workout({
   onSave, bests, previousByExercise, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft
@@ -10,6 +11,7 @@ export default function Workout({
   const items = workoutDraft?.exercises || []
   const notes = workoutDraft?.notes || ''
   const recovery = workoutDraft?.recovery || 'Good'
+  const workoutMode = workoutDraft?.workoutMode || 'standard'
 
   function updateDraft(updater) {
     setWorkoutDraft(prev => updater(prev || createWorkoutDraft(currentWorkout)))
@@ -80,7 +82,8 @@ export default function Workout({
         defaultWeight: '',
         targetTotal: null,
         isExtra: true,
-        isCollapsed: false,
+        isOptional: false,
+        isCollapsed: true,
         isComplete: false,
         difficulty: '',
         sets: [{ weight: '', reps: '' }, { weight: '', reps: '' }]
@@ -113,22 +116,44 @@ export default function Workout({
     exercises: draft.exercises.filter((_, i) => i !== index)
   }))
 
+  const isVisible = (item, mode = workoutMode) => mode === 'extended' || !item.isOptional
+
   function toggleComplete(index) {
-    updateDraft(draft => ({
-      ...draft,
-      exercises: draft.exercises.map((item, i) => {
-        if (i !== index) return item
-        const complete = !item.isComplete
-        return { ...item, isComplete: complete, isCollapsed: complete }
-      })
-    }))
+    updateDraft(draft => {
+      const complete = !draft.exercises[index].isComplete
+      const mode = draft.workoutMode || 'standard'
+      const nextIndex = complete
+        ? draft.exercises.findIndex((item, i) => i > index && !item.isComplete && isVisible(item, mode))
+        : -1
+
+      return {
+        ...draft,
+        exercises: draft.exercises.map((item, i) => {
+          if (i === index) return { ...item, isComplete: complete, isCollapsed: complete }
+          if (complete && i === nextIndex) return { ...item, isCollapsed: false }
+          return item
+        })
+      }
+    })
+
+    window.setTimeout(() => {
+      document.querySelector('.workoutExerciseCard.activeExercise')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 150)
   }
 
   const toggleCollapsed = index => updateDraft(draft => ({
     ...draft,
-    exercises: draft.exercises.map((item, i) =>
-      i === index ? { ...item, isCollapsed: !item.isCollapsed } : item
-    )
+    exercises: draft.exercises.map((item, i) => {
+      if (i === index) return { ...item, isCollapsed: !item.isCollapsed }
+      return item.isComplete ? item : { ...item, isCollapsed: true }
+    })
+  }))
+
+  const setWorkoutMode = mode => updateDraft(draft => ({
+    ...draft,
+    workoutMode: mode,
+    exercises: draft.exercises.map(item => ({ ...item, isCollapsed: true }))
   }))
 
   const updateNotes = value => updateDraft(draft => ({ ...draft, notes: value }))
@@ -145,13 +170,19 @@ export default function Workout({
     ['Tired', '😫']
   ]
 
+  const visibleItems = items
+    .map((exercise, originalIndex) => ({ exercise, originalIndex }))
+    .filter(({ exercise }) => isVisible(exercise))
+  const completedCount = visibleItems.filter(({ exercise }) => exercise.isComplete).length
+  const progress = visibleItems.length ? Math.round((completedCount / visibleItems.length) * 100) : 0
+
   return (
     <>
       <header className="workoutHeader">
         <div>
           <div className="eyebrow">{currentWorkout.subtitle}</div>
           <h1>{currentWorkout.name}</h1>
-          <p className="muted">{items.length} exercises · 45–75 minutes</p>
+          <p className="muted">{visibleItems.length} exercises · {workoutMode === 'extended' ? '60–75' : '45–60'} minutes</p>
         </div>
       </header>
 
@@ -172,11 +203,34 @@ export default function Workout({
         </div>
       </section>
 
+      <section className="card workoutModeCard">
+        <h2>Choose your workout</h2>
+        <div className="workoutModeOptions">
+          <button type="button" className={workoutMode === 'standard' ? 'workoutModeButton active' : 'workoutModeButton'} onClick={() => setWorkoutMode('standard')}>
+            <strong>Standard</strong><span>45–60 minutes</span>
+          </button>
+          <button type="button" className={workoutMode === 'extended' ? 'workoutModeButton active' : 'workoutModeButton'} onClick={() => setWorkoutMode('extended')}>
+            <strong>Extended</strong><span>Adds optional exercises</span>
+          </button>
+        </div>
+      </section>
+
+      <section className="workoutProgressCard">
+        <div className="workoutProgressHeading">
+          <strong>{completedCount} / {visibleItems.length} exercises complete</strong>
+          <span>{progress}%</span>
+        </div>
+        <div className="workoutProgressTrack">
+          <div className="workoutProgressFill" style={{ width: `${progress}%` }} />
+        </div>
+      </section>
+
       <section className="workoutList">
-        {items.map((exercise, index) => (
+        {visibleItems.map(({ exercise, originalIndex }, displayIndex) => (
           <ExerciseCard
-            key={`${exercise.name}-${index}`}
-            index={index}
+            key={`${exercise.name}-${originalIndex}`}
+            index={originalIndex}
+            displayIndex={displayIndex}
             exercise={exercise}
             best={bests[exercise.name]}
             previous={previousByExercise[exercise.name]}
@@ -205,7 +259,7 @@ export default function Workout({
           onChange={e => updateNotes(e.target.value)}
           placeholder="Energy, difficulty, anything awkward or too easy..."
         />
-        <button className="btn" onClick={() => onSave({ exercises: items, notes })}>
+        <button className="btn" onClick={() => onSave({ exercises: visibleItems.map(({ exercise }) => exercise), notes })}>
           <Check size={18}/> Finish + save to cloud
         </button>
         <button className="secondaryBtn" type="button" onClick={handleReset}>

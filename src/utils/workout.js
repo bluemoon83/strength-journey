@@ -44,7 +44,7 @@ export function buildWorkoutItems(workout) {
   return workout.exercises.map(ex => ({
     ...ex,
     equipment: ex.equipment || '',
-    isCollapsed: false,
+    isCollapsed: true,
     isComplete: false,
     difficulty: '',
     weightUnit: ex.weightUnit || 'kg',
@@ -57,6 +57,8 @@ export function buildWorkoutItems(workout) {
 
 export const createWorkoutDraft = workout => ({
   workoutName: workout.name,
+  workoutMode: 'standard',
+  recovery: 'Good',
   notes: '',
   exercises: buildWorkoutItems(workout)
 })

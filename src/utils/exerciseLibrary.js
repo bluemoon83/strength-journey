@@ -138,9 +138,21 @@ export const exerciseLibrary = {
   'Assisted Dip Machine': demo('assisted dip machine exercise demonstration'),
   'Incline Press-ups': demo('incline push up exercise demonstration'),
   'Chest Press Machine': demo('chest press machine exercise demonstration'),
-  'Pallof Press': demo('pallof press exercise demonstration'),
+  'Pallof Press': {
+    primaryMuscles: ['Core'],
+    secondaryMuscles: ['Obliques', 'Glutes'],
+    cue: 'Brace your core and press straight ahead without allowing your torso to rotate.',
+    alternatives: ['Dead Bug', 'Plank', 'Ab Crunch Machine'],
+    demoQuery: 'pallof press exercise demonstration'
+  },
   'Dead Bug': demo('dead bug core exercise demonstration'),
-  'Ab Crunch Machine': demo('ab crunch machine exercise demonstration'),
+  'Ab Crunch Machine': {
+    primaryMuscles: ['Abs'],
+    secondaryMuscles: [],
+    cue: 'Curl your ribs towards your hips while keeping your hips still.',
+    alternatives: ['Dead Bug', 'Plank', 'Pallof Press'],
+    demoQuery: 'ab crunch machine exercise demonstration'
+  },
   'FreeMotion High Row': demo('freemotion high row exercise demonstration'),
   'Assisted Pull-up': demo('assisted pull up machine demonstration'),
   'FreeMotion Incline Press': demo('freemotion incline chest press demonstration'),

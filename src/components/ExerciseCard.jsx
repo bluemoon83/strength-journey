@@ -15,7 +15,7 @@ const difficultyOptions = [
 ]
 
 export default function ExerciseCard({
-  index, exercise, best, previous, recovery, update, updateSet, addSet, removeSet,
+  index, displayIndex = index, exercise, best, previous, recovery, update, updateSet, addSet, removeSet,
   removeExercise, replaceExercise, restoreExercise, toggleComplete, toggleCollapsed
 }) {
   const [showSwaps, setShowSwaps] = useState(false)
@@ -35,18 +35,21 @@ export default function ExerciseCard({
 
   return (
     <>
-      <div className={`workoutExerciseCard ${exercise.isComplete ? 'completedExercise' : ''}`}>
+      <div className={`workoutExerciseCard ${exercise.isComplete ? 'completedExercise' : ''} ${!exercise.isCollapsed && !exercise.isComplete ? 'activeExercise' : ''}`}>
         <div className="exerciseTitleRow">
           <button className="collapseHeader" type="button" onClick={() => toggleCollapsed(index)}>
             <span className="collapseIcon">
-              {exercise.isCollapsed ? <ChevronDown size={18}/> : <ChevronUp size={18}/>} 
+              {exercise.isComplete
+                ? <Check size={18}/>
+                : exercise.isCollapsed ? <ChevronDown size={18}/> : <ChevronUp size={18}/>} 
             </span>
             <span>
               {exercise.isExtra
                 ? <span className="extraTitle">Extra exercise</span>
-                : <h3>{index + 1}. {exercise.name}</h3>}
+                : <h3>{displayIndex + 1}. {exercise.name}</h3>}
+              {exercise.isOptional && <span className="optionalPill">Extended</span>}
               {exercise.isSwap && <span className="swapPill">Substitution</span>}
-              <span className="collapsedSummary">{summary || exercise.target}</span>
+              <span className="collapsedSummary">{exercise.isComplete ? (summary || 'Completed') : (summary || exercise.target)}</span>
             </span>
           </button>
 
