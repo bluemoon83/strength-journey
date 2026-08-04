@@ -228,7 +228,7 @@ export default function Workout({
       <section className="workoutList">
         {visibleItems.map(({ exercise, originalIndex }, displayIndex) => (
           <ExerciseCard
-            key={`${exercise.name}-${originalIndex}`}
+            key={`exercise-${originalIndex}`}
             index={originalIndex}
             displayIndex={displayIndex}
             exercise={exercise}
