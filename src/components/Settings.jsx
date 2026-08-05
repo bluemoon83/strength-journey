@@ -72,7 +72,7 @@ export default function Settings({
 
       <section className="card subtle">
         <h2>Strength Journey</h2>
-        <p className="status">v0.8.1 • Guided Workout Progress</p>
+        <p className="status">v0.9.1 • Cleaner Exercise Cards</p>
       </section>
 
       <section className="card">

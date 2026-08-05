@@ -19,6 +19,7 @@ export default function ExerciseCard({
   removeExercise, replaceExercise, restoreExercise, toggleComplete, toggleCollapsed
 }) {
   const [showSwaps, setShowSwaps] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
   const [demoExercise, setDemoExercise] = useState(null)
   const total = exercise.sets.reduce((sum, set) => sum + (numberFrom(set.reps) || 0), 0)
   const isTargetTotal = exercise.type === 'target-total'
@@ -41,7 +42,7 @@ export default function ExerciseCard({
             <span className="collapseIcon">
               {exercise.isComplete
                 ? <Check size={18}/>
-                : exercise.isCollapsed ? <ChevronDown size={18}/> : <ChevronUp size={18}/>} 
+                : exercise.isCollapsed ? <ChevronDown size={18}/> : <ChevronUp size={18}/>}
             </span>
             <span>
               {exercise.isExtra
@@ -65,74 +66,11 @@ export default function ExerciseCard({
 
         {!exercise.isCollapsed && (
           <>
-            {exercise.isExtra
-              ? <Field label="Exercise name" value={exercise.name} onChange={v => update(index, 'name', v)} />
-              : <p className="target">Target: {exercise.target} · {exercise.reps}</p>}
+            {exercise.isExtra && (
+              <Field label="Exercise name" value={exercise.name} onChange={value => update(index, 'name', value)} />
+            )}
 
-            <button className="demoButton" type="button" onClick={() => showDemo(exercise.name)}>
-              <Play size={18} fill="currentColor"/> Watch quick demo
-            </button>
-
-            <CoachCard recommendation={coach} />
             <WorkoutReplay previous={previous} best={best} />
-
-            <div className="muscleGrid">
-              <div>
-                <span className="guideLabel">Primary</span>
-                <strong>{details.primaryMuscles.join(' · ') || 'Not set'}</strong>
-              </div>
-              {details.secondaryMuscles.length > 0 && (
-                <div>
-                  <span className="guideLabel">Also works</span>
-                  <strong>{details.secondaryMuscles.join(' · ')}</strong>
-                </div>
-              )}
-            </div>
-
-            {details.cue && (
-              <div className="techniqueCard">
-                <span className="guideLabel">Technique</span>
-                <p>{details.cue}</p>
-              </div>
-            )}
-
-            {details.alternatives.length > 0 && (
-              <div className="machineBusy">
-                <button className="busyButton" type="button" onClick={() => setShowSwaps(value => !value)}>
-                  <Wrench size={17}/> {showSwaps ? 'Hide alternatives' : 'Machine busy?'}
-                </button>
-
-                {showSwaps && (
-                  <div className="swapOptions">
-                    <p>Choose an alternative for today:</p>
-                    {details.alternatives.map(name => (
-                      <div className="swapOptionRow" key={name}>
-                        <button className="swapDemoButton" type="button" onClick={() => showDemo(name)}>
-                          <Play size={15}/> Demo
-                        </button>
-                        <button
-                          className="swapChoiceButton"
-                          type="button"
-                          onClick={() => {
-                            replaceExercise(index, name)
-                            setShowSwaps(false)
-                          }}
-                        >
-                          <strong>{name}</strong>
-                          <span>Use this exercise</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {exercise.isSwap && exercise.originalName && (
-                  <button className="restoreButton" type="button" onClick={() => restoreExercise(index)}>
-                    <RefreshCw size={15}/> Restore {exercise.originalName}
-                  </button>
-                )}
-              </div>
-            )}
 
             {isTargetTotal && (
               <div className="totalBox">
@@ -141,43 +79,10 @@ export default function ExerciseCard({
               </div>
             )}
 
-            <div className="grid">
-              <SelectField
-                label="Equipment"
-                value={exercise.equipment}
-                options={exercise.equipmentOptions || equipmentOptions}
-                onChange={v => update(index, 'equipment', v)}
-              />
-              {!isBodyweight && (
-                <SelectField
-                  label="Weight unit"
-                  value={exercise.weightUnit || 'kg'}
-                  options={weightUnitOptions}
-                  onChange={v => update(index, 'weightUnit', v)}
-                />
-              )}
-            </div>
-
-            <div className="difficultyPicker">
-              <label>How did it feel?</label>
-              <div className="difficultyOptions">
-                {difficultyOptions.map(([value, label]) => (
-                  <button
-                    type="button"
-                    key={value}
-                    className={exercise.difficulty === value ? 'active' : ''}
-                    onClick={() => update(index, 'difficulty', exercise.difficulty === value ? '' : value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="setRows">
+            <div className="setRows currentSetsBlock">
               <div className={isBodyweight ? 'setRowHeader bodyweightSetHeader' : 'setRowHeader'}>
                 <span>Set</span>
-                {!isBodyweight && <span>Weight</span>}
+                {!isBodyweight && <span>Current weight</span>}
                 <span>{exercise.type === 'timed' ? 'Seconds' : 'Reps'}</span>
               </div>
 
@@ -187,16 +92,21 @@ export default function ExerciseCard({
                   {!isBodyweight && (
                     <input
                       value={set.weight}
-                      onChange={e => updateSet(index, setIndex, 'weight', e.target.value)}
+                      onFocus={event => event.currentTarget.select()}
+                      onClick={event => event.currentTarget.select()}
+                      onChange={event => updateSet(index, setIndex, 'weight', event.target.value)}
                       placeholder={exercise.weightUnit || 'kg'}
                       inputMode="decimal"
+                      aria-label={`Set ${setIndex + 1} weight`}
                     />
                   )}
                   <input
                     value={set.reps}
-                    onChange={e => updateSet(index, setIndex, 'reps', e.target.value)}
+                    onFocus={event => event.currentTarget.select()}
+                    onChange={event => updateSet(index, setIndex, 'reps', event.target.value)}
                     placeholder={exercise.type === 'timed' ? 'sec' : 'reps'}
                     inputMode="numeric"
+                    aria-label={`Set ${setIndex + 1} ${exercise.type === 'timed' ? 'seconds' : 'reps'}`}
                   />
                 </div>
               ))}
@@ -206,6 +116,119 @@ export default function ExerciseCard({
               <button type="button" className="miniBtn" onClick={() => addSet(index)}><Plus size={16}/> Add set</button>
               <button type="button" className="miniBtn" onClick={() => removeSet(index)}>Remove set</button>
             </div>
+
+            <button
+              type="button"
+              className="exerciseDetailsToggle"
+              onClick={() => setShowDetails(value => !value)}
+              aria-expanded={showDetails}
+            >
+              <span>{showDetails ? 'Hide details' : 'More details'}</span>
+              {showDetails ? <ChevronUp size={18}/> : <ChevronDown size={18}/>}
+            </button>
+
+            {showDetails && (
+              <div className="exerciseDetailsPanel">
+                {!exercise.isExtra && <p className="target">Target: {exercise.target} · {exercise.reps}</p>}
+
+                <button className="demoButton" type="button" onClick={() => showDemo(exercise.name)}>
+                  <Play size={18} fill="currentColor"/> Watch quick demo
+                </button>
+
+                <CoachCard recommendation={coach} />
+
+                <div className="muscleGrid">
+                  <div>
+                    <span className="guideLabel">Primary</span>
+                    <strong>{details.primaryMuscles.join(' · ') || 'Not set'}</strong>
+                  </div>
+                  {details.secondaryMuscles.length > 0 && (
+                    <div>
+                      <span className="guideLabel">Also works</span>
+                      <strong>{details.secondaryMuscles.join(' · ')}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {details.cue && (
+                  <div className="techniqueCard">
+                    <span className="guideLabel">Technique</span>
+                    <p>{details.cue}</p>
+                  </div>
+                )}
+
+                {details.alternatives.length > 0 && (
+                  <div className="machineBusy">
+                    <button className="busyButton" type="button" onClick={() => setShowSwaps(value => !value)}>
+                      <Wrench size={17}/> {showSwaps ? 'Hide alternatives' : 'Machine busy?'}
+                    </button>
+
+                    {showSwaps && (
+                      <div className="swapOptions">
+                        <p>Choose an alternative for today:</p>
+                        {details.alternatives.map(name => (
+                          <div className="swapOptionRow" key={name}>
+                            <button className="swapDemoButton" type="button" onClick={() => showDemo(name)}>
+                              <Play size={15}/> Demo
+                            </button>
+                            <button
+                              className="swapChoiceButton"
+                              type="button"
+                              onClick={() => {
+                                replaceExercise(index, name)
+                                setShowSwaps(false)
+                              }}
+                            >
+                              <strong>{name}</strong>
+                              <span>Use this exercise</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {exercise.isSwap && exercise.originalName && (
+                      <button className="restoreButton" type="button" onClick={() => restoreExercise(index)}>
+                        <RefreshCw size={15}/> Restore {exercise.originalName}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid">
+                  <SelectField
+                    label="Equipment"
+                    value={exercise.equipment}
+                    options={exercise.equipmentOptions || equipmentOptions}
+                    onChange={value => update(index, 'equipment', value)}
+                  />
+                  {!isBodyweight && (
+                    <SelectField
+                      label="Weight unit"
+                      value={exercise.weightUnit || 'kg'}
+                      options={weightUnitOptions}
+                      onChange={value => update(index, 'weightUnit', value)}
+                    />
+                  )}
+                </div>
+
+                <div className="difficultyPicker">
+                  <label>How did it feel?</label>
+                  <div className="difficultyOptions">
+                    {difficultyOptions.map(([value, label]) => (
+                      <button
+                        type="button"
+                        key={value}
+                        className={exercise.difficulty === value ? 'active' : ''}
+                        onClick={() => update(index, 'difficulty', exercise.difficulty === value ? '' : value)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <button type="button" className="completeBtn" onClick={() => toggleComplete(index)}>
               <Check size={18}/> {exercise.isComplete ? 'Reopen exercise' : 'Mark exercise complete'}
@@ -229,18 +252,18 @@ function WorkoutReplay({ previous, best }) {
   const previousSets = getPreviousSets(previous)
   if (!previousSets.length && !best) {
     return (
-      <div className="replayBox">
-        <span className="replayLabel">Workout replay</span>
+      <div className="replayBox compactReplayBox">
+        <span className="replayLabel">Previous workout</span>
         <p className="muted">No previous result logged for this exercise.</p>
       </div>
     )
   }
 
   return (
-    <div className="replayBox">
+    <div className="replayBox compactReplayBox">
       <div className="replayHeading">
         <div>
-          <span className="replayLabel">Last workout</span>
+          <span className="replayLabel">Previous workout</span>
           {previous?.workoutDate && <small>{formatReplayDate(previous.workoutDate)}</small>}
         </div>
         <div className="replayBest">
@@ -250,9 +273,9 @@ function WorkoutReplay({ previous, best }) {
       </div>
       {previousSets.length > 0 && (
         <div className="replaySets">
-          {previousSets.map((set, index) => (
-            <div className="replaySet" key={index}>
-              <span>Set {index + 1}</span>
+          {previousSets.map((set, setIndex) => (
+            <div className="replaySet" key={setIndex}>
+              <span>Set {setIndex + 1}</span>
               <strong>{set}</strong>
             </div>
           ))}

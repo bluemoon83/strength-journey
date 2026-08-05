@@ -29,11 +29,30 @@ export default function Workout({
       ...draft,
       exercises: draft.exercises.map((item, i) => {
         if (i !== exerciseIndex) return item
-        const sets = [...item.sets]
-        sets[setIndex] = {
-          ...sets[setIndex],
-          [key]: key === 'weight' ? cleanWeight(value) : value
+
+        const sets = item.sets.map(set => ({ ...set }))
+
+        if (key === 'weight') {
+          const nextWeight = cleanWeight(value)
+          sets[setIndex] = {
+            ...sets[setIndex],
+            weight: nextWeight,
+            weightEdited: true
+          }
+
+          // Set 1 acts as the current working weight. Keep untouched later
+          // sets in sync, while preserving any set the user changed manually.
+          if (setIndex === 0) {
+            for (let nextIndex = 1; nextIndex < sets.length; nextIndex += 1) {
+              if (!sets[nextIndex].weightEdited) {
+                sets[nextIndex] = { ...sets[nextIndex], weight: nextWeight }
+              }
+            }
+          }
+        } else {
+          sets[setIndex] = { ...sets[setIndex], [key]: value }
         }
+
         return { ...item, sets }
       })
     }))
@@ -51,6 +70,7 @@ export default function Workout({
             weight: item.equipment === 'Bodyweight'
               ? ''
               : (previousSet?.weight || cleanWeight(item.defaultWeight) || cleanWeight(item.weight) || ''),
+            weightEdited: false,
             reps: ''
           }]
         }
@@ -86,7 +106,7 @@ export default function Workout({
         isCollapsed: true,
         isComplete: false,
         difficulty: '',
-        sets: [{ weight: '', reps: '' }, { weight: '', reps: '' }]
+        sets: [{ weight: '', weightEdited: false, reps: '' }, { weight: '', weightEdited: false, reps: '' }]
       }]
     }))
   }

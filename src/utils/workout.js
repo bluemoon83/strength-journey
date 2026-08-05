@@ -50,7 +50,7 @@ export function buildWorkoutItems(workout) {
     weightUnit: ex.weightUnit || 'kg',
     sets: Array.from(
       { length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) },
-      () => ({ weight: ex.equipment === 'Bodyweight' ? '' : cleanWeight(ex.defaultWeight || ''), reps: '' })
+      () => ({ weight: ex.equipment === 'Bodyweight' ? '' : cleanWeight(ex.defaultWeight || ''), weightEdited: false, reps: '' })
     )
   }))
 }
