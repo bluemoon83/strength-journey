@@ -12,12 +12,13 @@ import {
   getNextWorkout,
   getTemplateByName,
   loadStoredWorkoutDraft,
-  formatWeight,
   numberFrom,
   today,
   workoutDraftKey
 } from './utils/workout'
 import { chooseProfileId } from './utils/profile'
+import { buildCloudWorkoutSets } from './utils/cloudPayload'
+import { createRestorePlan } from './utils/backup'
 
 export default function App() {
   const [tab, setTab] = useState('home')
@@ -265,45 +266,15 @@ export default function App() {
     try {
       const client = requireSupabase()
       const pid = await ensureProfile({ createIfMissing: true })
+      const { error } = await client.rpc('save_workout_with_sets', {
+        p_profile_id: pid,
+        p_workout_date: today(),
+        p_workout_name: currentWorkout.name,
+        p_notes: formData.notes || '',
+        p_sets: buildCloudWorkoutSets(formData.exercises)
+      })
 
-      const { data: workout, error: workoutError } = await client
-        .from('workouts')
-        .insert({
-          profile_id: pid,
-          workout_date: today(),
-          workout_name: currentWorkout.name,
-          notes: formData.notes
-        })
-        .select()
-        .single()
-
-      if (workoutError) throw workoutError
-
-      const rows = formData.exercises.map(exercise => ({
-        workout_id: workout.id,
-        exercise_name: exercise.name,
-        exercise_type: exercise.type,
-        equipment: exercise.equipment,
-        weight: formatWeight(exercise.sets?.[0]?.weight, exercise.weightUnit),
-        weight_1: formatWeight(exercise.sets?.[0]?.weight, exercise.weightUnit),
-        weight_2: formatWeight(exercise.sets?.[1]?.weight, exercise.weightUnit),
-        weight_3: formatWeight(exercise.sets?.[2]?.weight, exercise.weightUnit),
-        weight_4: formatWeight(exercise.sets?.[3]?.weight, exercise.weightUnit),
-        weight_5: formatWeight(exercise.sets?.[4]?.weight, exercise.weightUnit),
-        weight_6: formatWeight(exercise.sets?.[5]?.weight, exercise.weightUnit),
-        set_1: exercise.sets?.[0]?.reps || '',
-        set_2: exercise.sets?.[1]?.reps || '',
-        set_3: exercise.sets?.[2]?.reps || '',
-        set_4: exercise.sets?.[3]?.reps || '',
-        set_5: exercise.sets?.[4]?.reps || '',
-        set_6: exercise.sets?.[5]?.reps || '',
-        target_total: exercise.targetTotal || null,
-        is_extra: exercise.isExtra || false,
-        difficulty: exercise.difficulty
-      }))
-
-      const { error: setError } = await client.from('workout_sets').insert(rows)
-      if (setError) throw setError
+      if (error) throw explainDatabaseFunctionError(error)
 
       setWorkoutDraft(null)
       await loadCloudData()
@@ -336,6 +307,30 @@ export default function App() {
       alert('Body update saved.')
     } catch (error) {
       alert('Could not save body update: ' + error.message)
+    }
+  }
+
+  async function restoreBackup(backup) {
+    const client = requireSupabase()
+    const pid = await ensureProfile({ createIfMissing: true })
+    const plan = createRestorePlan(backup, workouts, body)
+
+    if (!plan.workouts.length && !plan.bodyUpdates.length) {
+      return { workouts: 0, bodyUpdates: 0 }
+    }
+
+    const { data, error } = await client.rpc('restore_strength_journey_backup', {
+      p_profile_id: pid,
+      p_workouts: plan.workouts,
+      p_body_updates: plan.bodyUpdates
+    })
+
+    if (error) throw explainDatabaseFunctionError(error)
+    await loadCloudData()
+
+    return {
+      workouts: Number(data?.workouts ?? plan.workouts.length),
+      bodyUpdates: Number(data?.body_updates ?? plan.bodyUpdates.length)
     }
   }
 
@@ -385,6 +380,7 @@ export default function App() {
             workouts={workouts}
             body={body}
             bests={bests}
+            onRestoreBackup={restoreBackup}
           />
         )}
       </main>
@@ -408,6 +404,13 @@ export default function App() {
       </nav>
     </div>
   )
+}
+
+function explainDatabaseFunctionError(error) {
+  if (error?.code === 'PGRST202' || /function|schema cache/i.test(error?.message || '')) {
+    return new Error('The v0.9.2 Supabase migration has not been installed yet. No data was changed.')
+  }
+  return error
 }
 
 function CloudStatusBanner({ cloudState, onRetry }) {

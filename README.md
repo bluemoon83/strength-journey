@@ -27,6 +27,15 @@ npm run dev
 
 8. Open the local URL shown in Terminal.
 
+## Supabase migrations
+
+Version 0.9.2 uses transactional database functions so a workout and all of its
+sets either save together or do not save at all. Apply the SQL files in
+`supabase/migrations` to the Supabase project before deploying that version.
+
+The migration creates functions only and does not update, delete or migrate
+existing workout records.
+
 ## Important
 
 Do not commit or share secret/service role keys. The publishable/anon key is okay for a frontend app, but before making the app public we should tighten Supabase Row Level Security and add login.

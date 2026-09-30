@@ -1,4 +1,4 @@
-import { workoutTemplates } from '../seed'
+import { workoutTemplates } from '../seed.js'
 
 export const equipmentOptions = ['Machine', 'Dumbbells', 'Cable', 'Bodyweight']
 export const weightUnitOptions = ['kg', 'lb']

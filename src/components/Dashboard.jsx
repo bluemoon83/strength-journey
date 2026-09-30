@@ -1,12 +1,19 @@
 import React from 'react'
-import { Dumbbell, Flame, Trophy, Weight } from 'lucide-react'
+import { Activity, Dumbbell, Flame, Trophy, Weight } from 'lucide-react'
 import { profile } from '../seed'
 import { Chart, Metric } from './Ui'
+import { getDashboardStats, getTrendSummary } from '../utils/stats'
 
 export default function Dashboard({ workouts, body, bests, cloudStatus, legPressChart, currentWorkout }) {
-  const latestWeight = body?.[body.length - 1]?.weight_kg || profile.startingWeightKg
-  const pct = Math.round((workouts.length / profile.targetWorkouts) * 100)
-  const nextSession = workouts.length + 1
+  const stats = getDashboardStats({
+    workouts,
+    body,
+    bests,
+    targetWorkouts: profile.targetWorkouts
+  })
+  const weightChange = stats.weightChange === null
+    ? 'No weight trend yet'
+    : `${stats.weightChange > 0 ? '+' : ''}${stats.weightChange}kg overall`
 
   return (
     <>
@@ -26,27 +33,27 @@ export default function Dashboard({ workouts, body, bests, cloudStatus, legPress
       </section>
 
       <section className="quickGrid">
-        <Metric icon={<Weight/>} value={`${latestWeight}kg`} label="Latest weight" />
-        <Metric icon={<Trophy/>} value={`${workouts.length}/${profile.targetWorkouts}`} label="Sessions done" />
-        <Metric icon={<Flame/>} value="40" label="July press-ups" />
-        <Metric icon={<Dumbbell/>} value={bests['Leg Press']?.display?.split('×')[0] || '77kg'} label="Leg press PB" />
+        <Metric icon={<Weight/>} value={stats.latestWeight === null ? '—' : `${stats.latestWeight}kg`} label={weightChange} />
+        <Metric icon={<Trophy/>} value={`${stats.totalWorkouts}/${profile.targetWorkouts}`} label="Sessions done" />
+        <Metric icon={<Activity/>} value={stats.recentWorkoutCount} label="Last 30 days" />
+        <Metric icon={<Dumbbell/>} value={stats.personalBestCount} label="Personal bests" />
       </section>
 
       <section className="card progressCard">
         <div className="row">
           <div>
             <h2>12-week block</h2>
-            <p className="muted">Session {nextSession} of {profile.targetWorkouts}</p>
+            <p className="muted">Session {stats.nextSession} of {profile.targetWorkouts}</p>
           </div>
-          <span className="ring">{pct}%</span>
+          <span className="ring">{stats.progressPercent}%</span>
         </div>
-        <div className="progress"><div className="bar" style={{ width: `${pct}%` }} /></div>
+        <div className="progress"><div className="bar" style={{ width: `${stats.progressPercent}%` }} /></div>
       </section>
 
       <section className="card">
         <div className="row">
           <div><h2>Leg press trend</h2><p className="muted">Your first big strength marker</p></div>
-          <span className="pill">68 → 77kg</span>
+          <span className="pill">{getTrendSummary(legPressChart)}</span>
         </div>
         <Chart data={legPressChart} />
       </section>

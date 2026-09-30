@@ -146,7 +146,7 @@ export function downloadBodyCsv(body) {
 export function downloadJsonBackup({ workouts, body, bests }) {
   const backup = {
     format: 'strength-journey-backup',
-    version: '0.5.3',
+    version: '0.9.2',
     exportedAt: new Date().toISOString(),
     workouts: workouts || [],
     body: body || [],
@@ -207,7 +207,7 @@ function calculateSummary(workouts, body, bests) {
 export function downloadAiReviewPack({ workouts, body, bests }) {
   const pack = {
     format: 'strength-journey-ai-review',
-    version: '0.5.3',
+    version: '0.9.2',
     exportedAt: new Date().toISOString(),
     instructions:
       'Review my training progress, consistency, exercise balance and progression. Suggest sensible changes to my next workouts.',
@@ -224,4 +224,3 @@ export function downloadAiReviewPack({ workouts, body, bests }) {
     'application/json;charset=utf-8'
   )
 }
-
