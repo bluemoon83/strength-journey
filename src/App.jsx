@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Activity, BarChart3, Dumbbell, Home, Settings as SettingsIcon } from 'lucide-react'
-import { supabase } from './supabase'
-import { localSeedWorkouts, profile } from './seed'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Activity, AlertTriangle, BarChart3, CheckCircle2, Dumbbell, Home, LoaderCircle, RefreshCw, Settings as SettingsIcon } from 'lucide-react'
+import { supabase, supabaseConfigError } from './supabase'
+import { profile } from './seed'
 import Dashboard from './components/Dashboard'
 import Workout from './components/Workout'
 import History from './components/History'
@@ -17,14 +17,19 @@ import {
   today,
   workoutDraftKey
 } from './utils/workout'
+import { chooseProfileId } from './utils/profile'
 
 export default function App() {
   const [tab, setTab] = useState('home')
-  const [profileId, setProfileId] = useState(localStorage.getItem('sj_profile_id'))
-  const [workouts, setWorkouts] = useState(localSeedWorkouts)
-  const [body, setBody] = useState([{ date: '2026-07-02', weight_kg: 89, waist_cm: '' }])
-  const [cloudStatus, setCloudStatus] = useState('Ready')
+  const [workouts, setWorkouts] = useState([])
+  const [body, setBody] = useState([])
+  const [cloudState, setCloudState] = useState({
+    status: 'loading',
+    message: 'Loading workout history from Supabase...'
+  })
   const [workoutDraft, setWorkoutDraft] = useState(loadStoredWorkoutDraft)
+  const loadRequestId = useRef(0)
+  const hasLoadedCloudData = useRef(false)
 
   useEffect(() => {
     loadCloudData()
@@ -51,24 +56,45 @@ export default function App() {
     }
   }, [workoutDraft])
 
-  async function ensureProfile() {
-    if (profileId) return profileId
+  function requireSupabase() {
+    if (supabaseConfigError) throw supabaseConfigError
+    return supabase
+  }
 
-    const { data: existing } = await supabase
+  async function ensureProfile({ createIfMissing = false } = {}) {
+    const client = requireSupabase()
+    const cachedProfileId = localStorage.getItem('sj_profile_id')
+    const { data: matchingProfiles, error: profileError } = await client
       .from('profiles')
-      .select('id')
+      .select('id, created_at')
       .eq('name', profile.name)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
 
-    if (existing) {
-      setProfileId(existing.id)
-      localStorage.setItem('sj_profile_id', existing.id)
-      return existing.id
+    if (profileError) throw profileError
+
+    if (matchingProfiles?.length) {
+      const profileIds = matchingProfiles.map(item => item.id)
+      const { data: workoutReferences, error: referenceError } = await client
+        .from('workouts')
+        .select('id, profile_id')
+        .in('profile_id', profileIds)
+
+      if (referenceError) throw referenceError
+
+      const resolvedProfileId = chooseProfileId(
+        matchingProfiles,
+        workoutReferences,
+        cachedProfileId
+      )
+
+      localStorage.setItem('sj_profile_id', resolvedProfileId)
+      return resolvedProfileId
     }
 
-    const { data, error } = await supabase
+    if (!createIfMissing) {
+      throw new Error(`No cloud profile was found for ${profile.name}.`)
+    }
+
+    const { data, error } = await client
       .from('profiles')
       .insert({
         name: profile.name,
@@ -83,17 +109,25 @@ export default function App() {
 
     if (error) throw error
 
-    setProfileId(data.id)
     localStorage.setItem('sj_profile_id', data.id)
     return data.id
   }
 
   async function loadCloudData() {
+    const requestId = ++loadRequestId.current
+
     try {
-      setCloudStatus('Checking cloud...')
+      setCloudState({
+        status: 'loading',
+        message: hasLoadedCloudData.current
+          ? 'Refreshing workout history from Supabase...'
+          : 'Loading workout history from Supabase...'
+      })
+
+      const client = requireSupabase()
       const pid = await ensureProfile()
 
-      const { data: cloudWorkouts, error: workoutError } = await supabase
+      const { data: cloudWorkouts, error: workoutError } = await client
         .from('workouts')
         .select('id, workout_date, workout_name, notes, workout_sets(*)')
         .eq('profile_id', pid)
@@ -101,26 +135,37 @@ export default function App() {
 
       if (workoutError) throw workoutError
 
-      if (cloudWorkouts?.length) {
-        setWorkouts(cloudWorkouts.map(workout => ({
-          id: workout.id,
-          date: workout.workout_date,
-          name: workout.workout_name,
-          notes: workout.notes,
-          exercises: workout.workout_sets || []
-        })))
-      }
-
-      const { data: bodyRows } = await supabase
+      const { data: bodyRows, error: bodyError } = await client
         .from('body_updates')
         .select('*')
         .eq('profile_id', pid)
         .order('update_date', { ascending: true })
 
-      if (bodyRows?.length) setBody(bodyRows)
-      setCloudStatus('Cloud sync connected')
+      if (bodyError) throw bodyError
+      if (requestId !== loadRequestId.current) return
+
+      setWorkouts((cloudWorkouts || []).map(workout => ({
+        id: workout.id,
+        date: workout.workout_date,
+        name: workout.workout_name,
+        notes: workout.notes,
+        exercises: workout.workout_sets || []
+      })))
+      setBody(bodyRows || [])
+      hasLoadedCloudData.current = true
+      setCloudState({
+        status: 'connected',
+        message: `Cloud connected · ${cloudWorkouts?.length || 0} workouts loaded`
+      })
     } catch (error) {
-      setCloudStatus('Cloud error: ' + error.message)
+      if (requestId !== loadRequestId.current) return
+
+      setCloudState({
+        status: 'error',
+        message: hasLoadedCloudData.current
+          ? `Cloud refresh failed. Showing the last cloud data loaded in this session. ${error.message}`
+          : `Workout history could not be loaded. No sample or cached workouts are being shown. ${error.message}`
+      })
     }
   }
 
@@ -218,9 +263,10 @@ export default function App() {
 
   async function saveWorkout(formData) {
     try {
-      const pid = await ensureProfile()
+      const client = requireSupabase()
+      const pid = await ensureProfile({ createIfMissing: true })
 
-      const { data: workout, error: workoutError } = await supabase
+      const { data: workout, error: workoutError } = await client
         .from('workouts')
         .insert({
           profile_id: pid,
@@ -256,7 +302,7 @@ export default function App() {
         difficulty: exercise.difficulty
       }))
 
-      const { error: setError } = await supabase.from('workout_sets').insert(rows)
+      const { error: setError } = await client.from('workout_sets').insert(rows)
       if (setError) throw setError
 
       setWorkoutDraft(null)
@@ -276,8 +322,9 @@ export default function App() {
 
   async function saveBody(weight, waist) {
     try {
-      const pid = await ensureProfile()
-      const { error } = await supabase.from('body_updates').insert({
+      const client = requireSupabase()
+      const pid = await ensureProfile({ createIfMissing: true })
+      const { error } = await client.from('body_updates').insert({
         profile_id: pid,
         update_date: today(),
         weight_kg: weight,
@@ -295,12 +342,14 @@ export default function App() {
   return (
     <div>
       <main className="app">
+        <CloudStatusBanner cloudState={cloudState} onRetry={loadCloudData} />
+
         {tab === 'home' && (
           <Dashboard
             workouts={workouts}
             body={body}
             bests={bests}
-            cloudStatus={cloudStatus}
+            cloudStatus={cloudState.message}
             legPressChart={legPressChart}
             currentWorkout={currentWorkout}
           />
@@ -331,7 +380,7 @@ export default function App() {
 
         {tab === 'settings' && (
           <Settings
-            cloudStatus={cloudStatus}
+            cloudStatus={cloudState.message}
             reload={loadCloudData}
             workouts={workouts}
             body={body}
@@ -358,6 +407,29 @@ export default function App() {
         </button>
       </nav>
     </div>
+  )
+}
+
+function CloudStatusBanner({ cloudState, onRetry }) {
+  const Icon = cloudState.status === 'connected'
+    ? CheckCircle2
+    : cloudState.status === 'error'
+      ? AlertTriangle
+      : LoaderCircle
+
+  return (
+    <section
+      className={`cloudBanner cloudBanner-${cloudState.status}`}
+      role={cloudState.status === 'error' ? 'alert' : 'status'}
+    >
+      <Icon className={cloudState.status === 'loading' ? 'cloudSpinner' : ''} size={20} />
+      <p>{cloudState.message}</p>
+      {cloudState.status === 'error' && (
+        <button type="button" onClick={onRetry}>
+          <RefreshCw size={16} /> Retry
+        </button>
+      )}
+    </section>
   )
 }
 

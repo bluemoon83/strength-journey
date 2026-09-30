@@ -220,6 +220,57 @@ strong { color: #fff; }
   font-size: 13px;
 }
 
+.cloudBanner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(96,165,250,.35);
+  border-radius: 18px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  background: rgba(20,35,57,.92);
+  color: #dbeafe;
+}
+
+.cloudBanner p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cloudBanner-connected {
+  border-color: rgba(52,211,153,.35);
+  background: rgba(16,52,38,.86);
+  color: #bbf7d0;
+}
+
+.cloudBanner-error {
+  border-color: rgba(251,113,133,.45);
+  background: rgba(72,22,35,.92);
+  color: #ffe4e6;
+}
+
+.cloudBanner button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.1);
+  color: inherit;
+  font-weight: 800;
+}
+
+.cloudSpinner {
+  animation: cloudSpin .9s linear infinite;
+}
+
+@keyframes cloudSpin {
+  to { transform: rotate(360deg); }
+}
+
 .chart {
   height: 190px;
   margin-top: 14px;
