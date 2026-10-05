@@ -1,12 +1,13 @@
 import React from 'react'
-import { Check, Plus } from 'lucide-react'
+import { Check, Plus, RefreshCw } from 'lucide-react'
 import ExerciseCard from './ExerciseCard'
-import { cleanWeight, createWorkoutDraft, equipmentOptions } from '../utils/workout'
+import { cleanWeight, createWorkoutDraft, equipmentOptions, hasWorkoutDraftProgress } from '../utils/workout'
 import { swapExercise } from '../utils/exerciseLibrary'
 import '../workoutFlow.css'
 
 export default function Workout({
-  onSave, bests, previousByExercise, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft
+  onSave, bests, previousByExercise, currentWorkout, workoutDraft, setWorkoutDraft, resetWorkoutDraft,
+  scheduledWorkout, startScheduledWorkout, draftIsOffSchedule
 }) {
   const items = workoutDraft?.exercises || []
   const notes = workoutDraft?.notes || ''
@@ -93,6 +94,8 @@ export default function Workout({
       ...draft,
       exercises: [...draft.exercises, {
         name: 'Extra exercise',
+        group: 'Accessory',
+        trainingOrder: 65,
         type: 'strength',
         equipment: 'Machine',
         equipmentOptions,
@@ -183,6 +186,14 @@ export default function Workout({
     if (window.confirm('Clear your current workout entries and start again?')) resetWorkoutDraft()
   }
 
+  function handleStartScheduledWorkout() {
+    const hasProgress = hasWorkoutDraftProgress(workoutDraft)
+    const approved = !hasProgress || window.confirm(
+      `Start ${scheduledWorkout.name}? Your entries in ${currentWorkout.name} will be cleared.`
+    )
+    if (approved) startScheduledWorkout()
+  }
+
   const recoveryOptions = [
     ['Great', '😀'],
     ['Good', '🙂'],
@@ -205,6 +216,24 @@ export default function Workout({
           <p className="muted">{visibleItems.length} exercises · {workoutMode === 'extended' ? '60–75' : '45–60'} minutes</p>
         </div>
       </header>
+
+      {draftIsOffSchedule && (
+        <section className="scheduleNotice" role="status">
+          <div>
+            <span className="eyebrow">Next in your rotation</span>
+            <strong>{scheduledWorkout.name}</strong>
+            <p>This saved draft is from {currentWorkout.name}. You can keep it or move to the scheduled session.</p>
+          </div>
+          <button type="button" onClick={handleStartScheduledWorkout}>
+            <RefreshCw size={17}/> Start next session
+          </button>
+        </section>
+      )}
+
+      <section className="trainingOrder" aria-label="Exercise order">
+        <span>Lower body</span><i>→</i><span>Push</span><i>→</i><span>Pull</span><i>→</i>
+        <span>Lower + accessories</span><i>→</i><span>Core</span>
+      </section>
 
       <section className="card recoveryCard">
         <h2>How are you feeling today?</h2>

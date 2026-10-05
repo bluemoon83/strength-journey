@@ -19,11 +19,23 @@ export function numberFrom(value) {
   return Number.isFinite(n) ? n : null
 }
 
+export function getLatestWorkout(workouts = []) {
+  return workouts
+    .map((workout, index) => ({ workout, index }))
+    .filter(({ workout }) => workout?.date && workout?.name)
+    .sort((left, right) => {
+      const dateOrder = String(right.workout.date).localeCompare(String(left.workout.date))
+      if (dateOrder) return dateOrder
+
+      const createdOrder = String(right.workout.createdAt || right.workout.created_at || '')
+        .localeCompare(String(left.workout.createdAt || left.workout.created_at || ''))
+      return createdOrder || right.index - left.index
+    })[0]?.workout || null
+}
+
 export function getNextWorkout(workouts) {
   if (!workouts?.length) return workoutTemplates[0]
-  const latest = [...workouts]
-    .filter(w => w?.date && w?.name)
-    .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+  const latest = getLatestWorkout(workouts)
   if (!latest) return workoutTemplates[0]
   const index = workoutTemplates.findIndex(t => t.name === latest.name)
   return index === -1 ? workoutTemplates[0] : workoutTemplates[(index + 1) % workoutTemplates.length]
@@ -34,34 +46,91 @@ export const getTemplateByName = name => workoutTemplates.find(t => t.name === n
 export function loadStoredWorkoutDraft() {
   try {
     const saved = localStorage.getItem(workoutDraftKey)
-    return saved ? JSON.parse(saved) : null
+    if (!saved) return null
+
+    const draft = JSON.parse(saved)
+    const template = workoutTemplates.find(item => item.name === draft?.workoutName)
+    if (!template || !Array.isArray(draft?.exercises)) return draft
+
+    return {
+      ...draft,
+      exercises: syncWorkoutDraftExercises(draft.exercises, template)
+    }
   } catch {
     return null
   }
 }
 
-export function buildWorkoutItems(workout) {
-  return workout.exercises.map(ex => ({
-    ...ex,
-    equipment: ex.equipment || '',
-    isCollapsed: true,
-    isComplete: false,
-    difficulty: '',
-    weightUnit: ex.weightUnit || 'kg',
-    sets: Array.from(
-      { length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) },
-      () => ({ weight: ex.equipment === 'Bodyweight' ? '' : cleanWeight(ex.defaultWeight || ''), weightEdited: false, reps: '' })
+export function syncWorkoutDraftExercises(savedExercises = [], template) {
+  const templateItems = buildWorkoutItems(template)
+  const usedSavedIndexes = new Set()
+
+  const syncedItems = templateItems.map(templateItem => {
+    const savedIndex = savedExercises.findIndex((savedItem, index) =>
+      !usedSavedIndexes.has(index) &&
+      (savedItem.name === templateItem.name || savedItem.originalName === templateItem.name)
     )
-  }))
+
+    if (savedIndex === -1) return templateItem
+    usedSavedIndexes.add(savedIndex)
+
+    return {
+      ...templateItem,
+      ...savedExercises[savedIndex],
+      group: templateItem.group,
+      trainingOrder: templateItem.trainingOrder
+    }
+  })
+
+  const extras = savedExercises.filter((exercise, index) =>
+    exercise.isExtra && !usedSavedIndexes.has(index)
+  )
+
+  return [...syncedItems, ...extras]
 }
 
-export const createWorkoutDraft = workout => ({
+export function buildWorkoutItems(workout) {
+  return workout.exercises
+    .map((exercise, originalIndex) => ({ exercise, originalIndex }))
+    .sort((left, right) =>
+      (left.exercise.trainingOrder ?? left.originalIndex) -
+      (right.exercise.trainingOrder ?? right.originalIndex)
+    )
+    .map(({ exercise: ex }) => ({
+      ...ex,
+      equipment: ex.equipment || '',
+      isCollapsed: true,
+      isComplete: false,
+      difficulty: '',
+      weightUnit: ex.weightUnit || 'kg',
+      sets: Array.from(
+        { length: ex.type === 'target-total' ? (ex.startingSets || 3) : (ex.sets || 3) },
+        () => ({ weight: ex.equipment === 'Bodyweight' ? '' : cleanWeight(ex.defaultWeight || ''), weightEdited: false, reps: '' })
+      )
+    }))
+}
+
+export const createWorkoutDraft = (workout, basedOnWorkoutId = null) => ({
   workoutName: workout.name,
+  basedOnWorkoutId,
   workoutMode: 'standard',
   recovery: 'Good',
   notes: '',
   exercises: buildWorkoutItems(workout)
 })
+
+export function hasWorkoutDraftProgress(draft) {
+  if (!draft) return false
+  if (String(draft.notes || '').trim()) return true
+  if (draft.recovery && draft.recovery !== 'Good') return true
+
+  return (draft.exercises || []).some(exercise =>
+    exercise.isComplete ||
+    exercise.isExtra ||
+    exercise.difficulty ||
+    (exercise.sets || []).some(set => String(set.reps || '').trim())
+  )
+}
 
 export function summariseSets(exercise) {
   const sets = exercise.sets.filter(s => s.reps).map(s => s.weight ? `${formatWeight(s.weight, exercise.weightUnit)} × ${s.reps}` : s.reps)

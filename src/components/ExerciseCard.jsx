@@ -50,6 +50,7 @@ export default function ExerciseCard({
                 : <h3>{displayIndex + 1}. {exercise.name}</h3>}
               {exercise.isOptional && <span className="optionalPill">Extended</span>}
               {exercise.isSwap && <span className="swapPill">Substitution</span>}
+              {exercise.group && <span className={`groupPill group-${exercise.group.toLowerCase().replace(/\s+/g, '-')}`}>{exercise.group}</span>}
               <span className="collapsedSummary">{exercise.isComplete ? (summary || 'Completed') : (summary || exercise.target)}</span>
             </span>
           </button>

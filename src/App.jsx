@@ -9,8 +9,10 @@ import Progress from './components/Progress'
 import Settings from './components/Settings'
 import {
   createWorkoutDraft,
+  getLatestWorkout,
   getNextWorkout,
   getTemplateByName,
+  hasWorkoutDraftProgress,
   loadStoredWorkoutDraft,
   numberFrom,
   today,
@@ -37,6 +39,7 @@ export default function App() {
   }, [])
 
   const nextWorkout = useMemo(() => getNextWorkout(workouts), [workouts])
+  const latestWorkout = useMemo(() => getLatestWorkout(workouts), [workouts])
 
   const currentWorkout = useMemo(() => {
     if (workoutDraft?.workoutName) {
@@ -46,8 +49,21 @@ export default function App() {
   }, [nextWorkout, workoutDraft?.workoutName])
 
   useEffect(() => {
-    if (!workoutDraft) setWorkoutDraft(createWorkoutDraft(nextWorkout))
-  }, [nextWorkout.name, workoutDraft])
+    if (cloudState.status === 'loading') return
+
+    setWorkoutDraft(existingDraft => {
+      if (!existingDraft) {
+        return createWorkoutDraft(nextWorkout, latestWorkout?.id || null)
+      }
+
+      const draftMatchesSchedule = existingDraft.workoutName === nextWorkout.name
+      if (draftMatchesSchedule || hasWorkoutDraftProgress(existingDraft)) {
+        return existingDraft
+      }
+
+      return createWorkoutDraft(nextWorkout, latestWorkout?.id || null)
+    })
+  }, [cloudState.status, latestWorkout?.id, nextWorkout.name])
 
   useEffect(() => {
     if (workoutDraft) {
@@ -130,7 +146,7 @@ export default function App() {
 
       const { data: cloudWorkouts, error: workoutError } = await client
         .from('workouts')
-        .select('id, workout_date, workout_name, notes, workout_sets(*)')
+        .select('id, workout_date, workout_name, notes, created_at, workout_sets(*)')
         .eq('profile_id', pid)
         .order('workout_date', { ascending: true })
 
@@ -148,6 +164,7 @@ export default function App() {
       setWorkouts((cloudWorkouts || []).map(workout => ({
         id: workout.id,
         date: workout.workout_date,
+        createdAt: workout.created_at,
         name: workout.workout_name,
         notes: workout.notes,
         exercises: workout.workout_sets || []
@@ -286,9 +303,13 @@ export default function App() {
   }
 
   function resetWorkoutDraft() {
-    const freshDraft = createWorkoutDraft(nextWorkout)
+    const freshDraft = createWorkoutDraft(nextWorkout, latestWorkout?.id || null)
     setWorkoutDraft(freshDraft)
     localStorage.setItem(workoutDraftKey, JSON.stringify(freshDraft))
+  }
+
+  function startScheduledWorkout() {
+    setWorkoutDraft(createWorkoutDraft(nextWorkout, latestWorkout?.id || null))
   }
 
   async function saveBody(weight, waist) {
@@ -359,6 +380,13 @@ export default function App() {
             workoutDraft={workoutDraft}
             setWorkoutDraft={setWorkoutDraft}
             resetWorkoutDraft={resetWorkoutDraft}
+            scheduledWorkout={nextWorkout}
+            startScheduledWorkout={startScheduledWorkout}
+            draftIsOffSchedule={Boolean(
+              cloudState.status === 'connected' &&
+              workoutDraft?.workoutName &&
+              workoutDraft.workoutName !== nextWorkout.name
+            )}
           />
         )}
 
