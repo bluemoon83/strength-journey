@@ -13,6 +13,7 @@ import {
   downloadWorkoutsCsv
 } from '../utils/exportData'
 import { createRestorePlan, parseBackup } from '../utils/backup'
+import { APP_VERSION, RELEASE_NAME } from '../version'
 
 export default function Settings({
   cloudStatus,
@@ -158,7 +159,7 @@ export default function Settings({
 
       <section className="card subtle">
         <h2>Strength Journey</h2>
-        <p className="status">v0.9.2 • Reliable History</p>
+        <p className="status">v{APP_VERSION} • {RELEASE_NAME}</p>
       </section>
 
       <section className="card">

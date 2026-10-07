@@ -1,3 +1,5 @@
+import { APP_VERSION } from '../version.js'
+
 const setNumbers = [1, 2, 3, 4, 5, 6]
 
 function csvEscape(value) {
@@ -146,7 +148,7 @@ export function downloadBodyCsv(body) {
 export function downloadJsonBackup({ workouts, body, bests }) {
   const backup = {
     format: 'strength-journey-backup',
-    version: '0.9.2',
+    version: APP_VERSION,
     exportedAt: new Date().toISOString(),
     workouts: workouts || [],
     body: body || [],
@@ -207,7 +209,7 @@ function calculateSummary(workouts, body, bests) {
 export function downloadAiReviewPack({ workouts, body, bests }) {
   const pack = {
     format: 'strength-journey-ai-review',
-    version: '0.9.2',
+    version: APP_VERSION,
     exportedAt: new Date().toISOString(),
     instructions:
       'Review my training progress, consistency, exercise balance and progression. Suggest sensible changes to my next workouts.',
