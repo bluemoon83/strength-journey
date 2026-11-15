@@ -1,0 +1,47 @@
+name: Keep Supabase active
+
+on:
+  schedule:
+    # Daily at 08:17 UTC. Avoiding the top of the hour reduces GitHub queue delays.
+    - cron: '17 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-supabase-active
+  cancel-in-progress: true
+
+jobs:
+  health-check:
+    name: Query Strength Journey database
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check required repository secrets
+        shell: bash
+        run: |
+          if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_PUBLISHABLE_KEY" ]]; then
+            echo "Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY repository secret."
+            exit 1
+          fi
+
+      - name: Make a lightweight database query
+        shell: bash
+        run: |
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --max-time 30 \
+            --retry 3 \
+            --retry-all-errors \
+            --output /dev/null \
+            "${SUPABASE_URL%/}/rest/v1/profiles?select=id&limit=1" \
+            --header "apikey: $SUPABASE_PUBLISHABLE_KEY"
+
+          echo "Supabase database health check succeeded."
