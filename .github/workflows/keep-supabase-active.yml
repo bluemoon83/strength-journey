@@ -17,6 +17,7 @@ jobs:
   health-check:
     name: Query Strength Journey database
     runs-on: ubuntu-latest
+    environment: Production
     timeout-minutes: 2
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -26,7 +27,7 @@ jobs:
         shell: bash
         run: |
           if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_PUBLISHABLE_KEY" ]]; then
-            echo "Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY repository secret."
+            echo "Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY in the Production environment."
             exit 1
           fi
 

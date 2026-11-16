@@ -40,14 +40,15 @@ existing workout records.
 
 The workflow in `.github/workflows/keep-supabase-active.yml` makes one small
 database query each day and can also be run manually from the GitHub Actions
-page. Add these repository secrets before enabling it:
+page. Add these secrets to the GitHub environment named `Production` before
+enabling it:
 
 - `SUPABASE_URL`: the value of `VITE_SUPABASE_URL` from the local `.env`
 - `SUPABASE_PUBLISHABLE_KEY`: the value of `VITE_SUPABASE_ANON_KEY` from the local `.env`
 
-In GitHub, open **Settings → Secrets and variables → Actions**, add both
-repository secrets, push the workflow to the default branch, then run it once
-using **Actions → Keep Supabase active → Run workflow**.
+In GitHub, open **Settings → Environments → Production**, add both environment
+secrets, push the workflow to the default branch, then run it once using
+**Actions → Keep Supabase active → Run workflow**.
 
 This reduces inactivity pauses on the Supabase Free plan but does not provide
 an uptime guarantee. GitHub may disable scheduled workflows after 60 days with
